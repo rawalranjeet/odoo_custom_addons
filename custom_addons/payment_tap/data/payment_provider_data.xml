@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="payment_provider_tap" model="payment.provider">
+        <field name="name">Tap</field>
+        <field name="code">tap</field>
+        <field name="state">disabled</field>
+        <field name="redirect_form_view_id" ref="redirect_form"/>
+         <field name="inline_form_view_id" ref="inline_form"/>
+        <field name="image_128" type="base64" file="payment_tap/static/img/tap.png"/>
+        <field name="module_id" ref="base.module_payment_tap"/>
+        <field name="payment_method_ids"
+               eval="[Command.set([
+                        ref('payment.payment_method_card'),
+                        ref('payment_tap.payment_method_tap')
+                     ])]"
+        />
+    </record>
+
+</odoo>
+
+<!-- ref('payment_tap.payment_method_tap'), -->

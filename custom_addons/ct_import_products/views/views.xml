@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="ct_maintenance_equipment_view_form_inherit_mrp" model="ir.ui.view">
+        <field name="name">maintenance.equipment.view.form.inherit.mrp</field>
+        <field name="model">maintenance.equipment</field>
+        <field name="inherit_id" ref="maintenance.hr_equipment_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="schedule"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="ct_odoo_studio_equipmen_1eb764d4" model="ir.ui.view">
+        <field name="name">maintenance.equipment.view.form.inherit.mrp</field>
+        <field name="model">maintenance.equipment</field>
+        <field name="inherit_id" ref="studio_customization.odoo_studio_equipmen_1eb764d4-7e16-4d8c-a894-0e592287486a"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='studio_page_87b_1ivij52va']/group[@name='studio_group_87b']/group[@name='studio_group_87b_left']" position="inside">
+                    <field name="parts">
+                        <list string="Parts" editable="bottom">
+                            <field name="name"/>
+                            <field name="serial_no"/>
+                            <field name="partner_id"/>
+                        </list>
+                    </field>
+            </xpath>
+            <xpath expr="//page[@name='studio_page_5md_1ivnuo36c']/group[@name='studio_group_5md']/group[@name='studio_group_5md_left']" position="inside">
+                <field name="check_rollers_for_wear"/>
+                <field name="clean_out_of_debri"/>
+                <field name="check_cable_for_any_fraying"/>
+                <field name="check_power_wires"/>
+                <field name="clean_battery_compartments"/>
+                <field name="inspect_drive_unit"/>
+                <field name="lubricate_mast_chains"/>
+                <field name="clean_and_inspect"/>
+                <field name="inspect_brake_pads"/>
+                <field name="grease_all_specified_fittings"/>
+            </xpath>
+            <xpath expr="//page[@name='studio_page_5md_1ivnuo36c']/group[@name='studio_group_5md']/group[@name='studio_group_5md_right']" position="inside">
+                <field name="tighten_all_hardware"/>
+                <field name="verify_mast_alignment_load"/>
+                <field name="free_of_corrosion_and_damage"/>
+                <field name="check_chain_stretch"/>
+                <field name="inspect_hydraulic_oil"/>
+                <field name="inspect_caster"/>
+                <field name="inspect_all_hydraulic_cylinders"/>
+                <field name="test_for_unusual_noises"/>
+                <field name="check_structural_welds"/>
+                <field name="inspect_operator_compartment"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

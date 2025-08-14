@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates>
+   <t t-name="many2one_config.kanban_sidebar_template" t-inherit="web.KanbanView" >
+        <xpath expr="//t[contains(@t-component, 'props.Renderer')]" position="before">
+            <div class = "border p-2">
+                <h2>Custom SideBar</h2>
+                <t t-esc="name.value"/>
+            </div>
+        </xpath>
+
+        <xpath expr="//Layout" position="attributes">
+            <attribute name="className">"d-flex"</attribute>
+        </xpath>
+
+       
+
+   </t>
+</templates>

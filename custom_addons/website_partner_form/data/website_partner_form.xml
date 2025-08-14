@@ -1,0 +1,82 @@
+<odoo>
+
+    <template id="partner_form" name="Partner Form">
+        <t t-call="portal.portal_layout">
+            <h2 class="text-center">Partner Form</h2>
+
+            <form id="partner_form" action="/my/partner-form/submit" method="POST">
+                
+                <div class="col-md-6 mx-auto mt-4">
+                    <label for="name">Name*</label>
+                    <input type="text" id="name" name="name" class="form-control" placeholder="Admin" required="True"/>
+                </div>
+                
+                <div class="col-md-6 mx-auto mt-4">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="admin@admin.com"/>
+                </div>
+
+                <div class="col-md-6 mx-auto mt-4">
+                    <label for="phone">Phone Number</label>
+                    <input type="number" id="phone" name="phone" class="form-control" placeholder="991239931"/>
+                </div>
+
+                 <div class="col-md-6 mx-auto mt-4 text-center">
+                   <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+
+            </form>
+        </t>
+    </template>
+
+
+    <template id="partner_data" name="Partners" >
+
+        <t t-call="portal.portal_layout">
+            
+            <t t-call="portal.portal_table"> 
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                    </tr>
+                </thead>
+                
+                <t t-foreach="partner_records" t-as="partner">
+                    <tr>
+                        <td t-esc='partner.name'/>
+                        <td>
+                            <t t-if="partner.email" t-esc="partner.email"/>
+                            <t t-else="" t-esc="_"/>
+                        </td>
+                        <td>
+                            <t t-if="partner.phone" t-esc="partner.phone"/>
+                            <t t-else="" t-esc="_"/>
+                        </td>
+                    </tr>
+                </t>
+            </t>
+        </t>
+    </template>
+
+
+    <template id="portal_my_home_menu_partner" inherit_id="portal.portal_breadcrumbs">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <li t-if="partner_records or partner_form" class="breadcrumb-item">
+                <a t-if="partner_form" href="/my/partner-data">Partners</a>
+                <t t-else="">Partners</t>
+            </li>
+            <li t-if="partner_form" class="breadcrumb-item">
+                New
+            </li>
+        </xpath>
+
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="after">
+            <div class="text-end" t-if="partner_records">
+                <a href='/my/partner-form' class="btn btn-success">Create New</a>
+            </div>
+        </xpath>
+    </template>
+    
+</odoo>

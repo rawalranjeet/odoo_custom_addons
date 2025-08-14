@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_property,access_property,model_property_property,,1,1,1,1
+access_property_room_line,access_property_room_line,model_property_room_line,,1,1,1,1
+access_room_room,access_room_room,model_room_room,,1,1,1,1
+access_room_component_line,access_room_component_line,model_room_component_line,,1,1,1,1
+access_property_component_service,access_property_component_service,model_property_component_service,,1,1,1,1
+access_component_component,access_component_component,model_component_component,,1,1,1,1
+access_component_order_line,access_component_order_line,model_component_order_line,,1,1,1,1

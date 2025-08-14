@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="website_partner_form.portal_template_inherit" inherit_id = "portal.portal_my_home">
+        <xpath expr="//div[@id='portal_service_category']" position="inside">
+            <div class="col-md-6 order-3">
+                <a href="/my/partner-data" class="d-flex gap-2 gap-md-3 py-3 pe-2 px-md-3 h-100 rounded text-decoration-none bg-100">
+                <img src="/web/static/img/user_placeholder.jpg" width="70rem"/>
+                <div>
+                    <div class="fs-5">
+                        Partner Form
+                    </div> 
+                    <div class="opacity-75">
+                        Create a new Partner
+                    </div>
+                </div>
+            </a>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>

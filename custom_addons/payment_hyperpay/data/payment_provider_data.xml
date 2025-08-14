@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="payment_provider_hyperpay" model="payment.provider">
+        <field name="name">HyperPay</field>
+        <field name="module_id" ref="base.module_payment_hyperpay"/>
+        <field name="code">hyperpay</field>
+    </record>
+
+</odoo>

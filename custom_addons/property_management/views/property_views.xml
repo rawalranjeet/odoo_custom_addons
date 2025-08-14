@@ -1,0 +1,173 @@
+<odoo>
+  <record id="view_form_property" model="ir.ui.view">
+    <field name="name">property.form</field>
+    <field name="model">property.property</field>
+    <field name="arch" type="xml">
+      <form string="Property">
+        <group>
+          <field name="name" />
+          <field name="partner_id" readonly="0" />
+          <field name="sale_order_id" readonly="1" invisible="1" />
+        </group>
+        <notebook>
+          <page string="Rooms">
+            <field name="property_room_line_ids" create="false">
+              <kanban widget="kanban" create="false">
+                  <field name="room_id"/>
+                  <field name="property_id"/>
+                  <templates>
+                      <t t-name="card">
+                        <a type="action"
+                          
+                          name="property_management.action_components_for_room"
+                          class="oe_kanban_card o_kanban_record oe_kanban_global_click"
+                          role="button"
+                          style="text-decoration: none; color: inherit;">
+                          <!-- <div>
+                              Property ID: <t t-esc="record.property_id and record.property_id.id.raw_value or 'None'"/>
+                              Room ID: <t t-esc="record.room_id and record.room_id.id.raw_value or 'None'"/>
+                          </div> -->
+                          <div>
+                              <span>Room: <field name="room_id"/></span>
+
+                              <t t-if="record.quantity.raw_value == 0">
+                                  <button type="object" name="action_add_room"
+                                          class="btn btn-primary btn-sm mt-2">
+                                      <i class="fa fa-shopping-cart"></i> Add
+                                  </button>
+                              </t>
+                              <t t-else="">
+                                  <div class="d-flex align-items-center mt-2">
+                                      <button type="object" name="action_decrease_room"
+                                              class="btn btn-secondary btn-sm">-</button>
+                                      <span class="mx-2"><field name="quantity"/></span>
+                                      <button type="object" name="action_increase_room"
+                                              class="btn btn-secondary btn-sm">+</button>
+                                  </div>
+                              </t>
+                          </div>
+                        </a>
+                      </t>
+                  </templates>
+              </kanban>
+          </field>
+            <!-- <field name="property_room_line_ids" mode="list,kanban">
+              <list>
+                <field name="room_id" />
+              </list>
+              <kanban editable="bottom">
+                <field name="room_id">
+                </field>
+                <templates>
+                  <t t-name="kanban-box">
+                    <div class="o_kanban_record">
+                      <strong>
+                        <field name="room_id" />
+                      </strong>
+                    </div>
+                  </t>
+                </templates>
+              </kanban>
+              <form string="Rooms">
+                <group>
+                  <field name="room_id" />
+                  <field name="component_line_ids" mode="list,kanban">
+                    <list editable="bottom">
+                      <field name="component_id" />
+                      <field name="length" />
+                      <field name="height" />
+                    </list>
+                    <kanban>
+                      <templates>
+                        <t t-name="kanban-box">
+                          <div class="o_kanban_record">
+                            <strong>
+                              <field name="component_id" />
+                            </strong>
+                            <br />
+                            Length: <field name="length" /> m
+                            <br />
+                            Height: <field name="height" /> m
+                          </div>
+                        </t>
+                      </templates>
+                    </kanban>
+                    <form string="Components">
+                      <group>
+                        <field name="component_id" />
+                        <field name="length" />
+                        <field name="height" />
+                      </group>
+                    </form>
+                  </field>
+                </group>
+              </form>
+            </field> -->
+          </page>
+          <page string="Summary">
+            <group>
+              <field name="total_components" readonly="1" />
+              <!-- <field name="total_area" readonly="1" /> -->
+              <field name="room_count" readonly="1" />
+            </group>
+          </page>
+        </notebook>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_tree_property" model="ir.ui.view">
+    <field name="name">property.tree</field>
+    <field name="model">property.property</field>
+    <field name="arch" type="xml">
+      <list string="Properties">
+        <field name="name" />
+        <field name="partner_id" />
+        <field name="sale_order_id" />
+        <!-- <field name="total_components"/> -->
+        <!-- <field name="total_area" /> -->
+      </list>
+    </field>
+  </record>
+
+  <record id="view_kanban_property" model="ir.ui.view">
+    <field name="name">property.kanban</field>
+    <field name="model">property.property</field>
+    
+    <field name="arch" type="xml">
+      
+      <kanban class="o_kanban_mobile" js_class="kanban_sidebar">
+        <templates>
+          
+          <t t-name="card">
+            <div class="oe_kanban_card">
+              <strong>
+                <field name="name" />
+              </strong>
+              <br />
+              <field name="partner_id" />
+              <br />
+              Rooms: <field name="room_count" />
+            <br /> Components: <field name="total_components" />
+          <div>Total
+              Area: <field name="total_area" /> m²</div>
+            </div>
+          </t>
+        </templates>
+      </kanban>
+    </field>
+  </record>
+
+  <record id="action_property" model="ir.actions.act_window">
+    <field name="name">Properties</field>
+    <field name="res_model">property.property</field>
+    <field name="view_mode">kanban,list,form</field>
+    
+  </record>
+
+  <menuitem id="menu_property_root" name="Properties" sequence="10" />
+  <menuitem id="menu_property" name="Properties" parent="menu_property_root"
+    action="action_property" sequence="1" />
+  <menuitem id="menu_property_configuration" name="Configuration" parent="menu_property_root"
+    sequence="3" />
+</odoo>

@@ -1,0 +1,60 @@
+<odoo>
+  <record id="view_tree_component_component" model="ir.ui.view">
+    <field name="name">component.component.tree</field>
+    <field name="model">component.component</field>
+    <field name="arch" type="xml">
+      <list string="Components">
+        <field name="name"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_form_component_component" model="ir.ui.view">
+    <field name="name">component.component.form</field>
+    <field name="model">component.component</field>
+    <field name="arch" type="xml">
+      <form string="Component">
+        <group>
+          <field name="name"/>
+        </group>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_component_component_kanban_select" model="ir.ui.view">
+    <field name="name">component.component.kanban.select</field>
+    <field name="model">component.component</field>
+    <field name="arch" type="xml">
+      <kanban>
+        <field name="name"/>
+        <templates>
+          <t t-name="kanban-box">
+            <div class="o_kanban_record">
+              <strong><field name="name"/></strong>
+              <button type="object"
+                name="action_add_to_property_room"
+                class="btn btn-primary btn-sm mt-2">
+                <i class="fa fa-plus"></i> Add
+              </button>
+            </div>
+          </t>
+        </templates>
+      </kanban>
+    </field>
+  </record>
+
+  <record id="action_component_component" model="ir.actions.act_window">
+    <field name="name">Components</field>
+    <field name="res_model">component.component</field>
+    <field name="view_mode">kanban,list,form</field>
+  </record>
+
+  <record id="action_components_for_room" model="ir.actions.act_window">
+    <field name="name">Room Components</field>
+    <field name="res_model">component.component</field>
+    <field name="view_mode">kanban,list,form</field>
+    <field name="context">{'default_room_line_id': active_id, 'hide_create_button': True,'create': False}</field>
+  </record>
+  <menuitem id="menu_component_component" name="Components" parent="menu_property_configuration" action="action_component_component" sequence="2"/>
+
+</odoo>

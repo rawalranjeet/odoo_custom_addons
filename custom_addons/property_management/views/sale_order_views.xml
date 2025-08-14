@@ -1,0 +1,70 @@
+<odoo>
+  <record id="sale_order_form_inherit_property" model="ir.ui.view">
+    <field name="name">sale.order.inherit.property</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_order_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='partner_id']" position="after">
+        <field name="property_id" context="{'default_partner_id': partner_id}"/>
+      </xpath>
+      <xpath expr="//form/sheet/notebook/page[@name='customer_signature']" position="after">
+        <page string="Quotation Requirements">
+          <field name="component_order_line_ids" mode="list,kanban">
+            <list editable="bottom">
+              <field name="component_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
+              <field name="service_id" />
+              <field name="primer_product_id" />
+              <field name="paint_product_id" />
+              <field name="paint_layers" />
+            </list>
+            <kanban editable="bottom" class="o_kanban_small_column">
+              <field name="component_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
+              <field name="service_id"/>
+              <field name="primer_product_id"/>
+              <field name="paint_product_id"/>
+              <field name="paint_layers"/>
+              <templates>
+                <t t-name="kanban-box">
+                  <div class="o_kanban_record card" style="border: 1px solid #ccc; border-radius: 6px; padding: 8px; margin: 4px; background-color: #f9f9f9;">
+                    <div class="o_kanban_details">
+                      <div style="font-weight: bold; font-size: 14px; color: #1A73E8;">
+                        <field name="component_id"/>
+                      </div>
+                      <div>
+                        <strong>Service:</strong> <field name="service_id"/>
+                      </div>
+                      <div t-if="record.primer_product_id.value">
+                        <strong>Primer:</strong> <field name="primer_product_id"/>
+                      </div>
+                      <div t-if="record.paint_product_id.value">
+                        <strong>Paint:</strong> <field name="paint_product_id"/>
+                      </div>
+                      <div>
+                        <strong>Layers:</strong> <field name="paint_layers"/>
+                      </div>
+                    </div>
+                  </div>
+                </t>
+              </templates>
+            </kanban>
+            <form string="Quotation Requirements">
+              <group>
+                <group>
+                  <field name="component_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
+                  <field name="service_id" />
+                </group>
+                <group>
+                  <field name="primer_product_id" />
+                  <field name="paint_product_id" />
+                </group>
+                <group>
+                  <field name="paint_layers" />
+                </group>
+              </group>
+            </form>
+          </field>
+        </page>
+      </xpath>
+    </field>
+  </record>
+</odoo>

@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ct_import_products_brand,access_ct_import_products_brand,model_product_brand,base.group_user,1,1,1,1
+access_ct_import_products_additional_attribute1,access_ct_import_products_attribute1,model_product_additional_attribute1,base.group_user,1,1,1,1
+access_ct_import_products_additional_attribute2,access_ct_import_products_attribute2,model_product_additional_attribute2,base.group_user,1,1,1,1
+

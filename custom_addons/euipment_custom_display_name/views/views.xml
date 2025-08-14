@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="maintenance_equipment_inherit_display_name" model="ir.ui.view">
+        <field name="name">maintenance.equipment.inherit.display.name</field>
+        <field name="model">maintenance.equipment</field>
+        <field name="inherit_id" ref="maintenance.hr_equipment_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="before">
+                <field name="equipment_type" />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="maintenance_equipment_inherit_check_list" model="ir.ui.view">
+        <field name="name">maintenance.equipment.inherit.check.list</field>
+        <field name="model">maintenance.equipment</field>
+        <field name="inherit_id" ref="studio_customization.odoo_studio_equipmen_1eb764d4-7e16-4d8c-a894-0e592287486a"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='studio_page_5md_1ivnuo36c']" position="replace">
+               <page name="check_list" string="Check List">
+                    <field name="checklist_lines" >
+                        <list editable = "bottom">
+                            <field name="checklist_id" />
+                            <field name="is_checked" />
+                        </list>
+                    </field>
+               </page>
+            </xpath>
+        </field>
+    </record>
+
+
+
+
+    <record id="maintenance_equipment_checklist_configuration_list" model="ir.ui.view">
+        <field name="name">maintenance.equipment.checklist.configuration.list</field>
+        <field name="model">maintenance.equipment.checklist.configuration</field>
+        <field name="arch" type="xml">
+            <list string="">
+                <field name="equipment_id" />
+                <field name="checklist_ids" widget="many2many_tags"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="maintenance_equipment_checklist_configuration_form" model="ir.ui.view">
+        <field name="name">maintenance.equipment.checklist.configuration.form</field>
+        <field name="model">maintenance.equipment.checklist.configuration</field>
+        <field name="arch" type="xml">
+            <form string="" >
+                <field name="equipment_id" />
+                <field name="checklist_ids" widget="many2many_tags"/>
+            </form>
+        </field>
+    </record>
+
+    <record id="maintenance_equipment_checklist_view_list" model="ir.ui.view">
+        <field name="name">maintenance.equipment.checklist.view.list</field>
+        <field name="model">maintenance.equipment.checklist</field>
+        <field name="arch" type="xml">
+            <list string="" editable="bottom">
+                <field name="name" readonly="1"/>
+                <!-- <field name="is_checked"/> -->
+            </list>
+        </field>
+    </record>
+
+    <record id="maintenance_equipment_checklist_view_list_line" model="ir.ui.view">
+        <field name="name">maintenance.equipment.checklist.view.list.line</field>
+        <field name="model">maintenance.equipment.checklist.line</field>
+        <field name="arch" type="xml">
+            <list string="" editable="bottom">
+                <field name="equipment_id" />
+                <field name="checklist_id" />
+                <field name="is_checked" />
+            </list>
+        </field>
+    </record>
+
+
+    <record id="maintenance_equipment_checklist_action_configuration" model="ir.actions.act_window">
+        <field name="name">CheckList Configuration</field>
+        <field name="res_model">maintenance.equipment.checklist.configuration</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="maintenance_equipment_checklist_action_view_list" model="ir.actions.act_window">
+        <field name="name">CheckList</field>
+        <field name="res_model">maintenance.equipment.checklist</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <record id="maintenance_equipment_checklist_action_line" model="ir.actions.act_window">
+        <field name="name">CheckList</field>
+        <field name="res_model">maintenance.equipment.checklist.line</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <menuitem
+        id="menu_maintenance_euipment_configuration_checklist"
+        name="Check List Configuration"
+        action = "maintenance_equipment_checklist_action_configuration"
+        parent="maintenance.menu_maintenance_configuration"
+        />
+
+    <menuitem
+        id="menu_maintenance_euipment_checklist_line"
+        name="Check List Lines"
+        action = "maintenance_equipment_checklist_action_line"
+        parent="maintenance.menu_maintenance_configuration"
+        />
+
+    <menuitem
+        id="menu_maintenance_euipment_view_checklist"
+        name="Check List"
+        action = "maintenance_equipment_checklist_action_view_list"
+        parent="maintenance.menu_maintenance_configuration"
+        />
+
+</odoo>

@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16
+    container_name: springs_life_db
+    ports:
+      - "5101:5432"
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    restart: unless-stopped  
+
+  odoo:
+    image: odoo:18.0
+    depends_on:
+      - db
+    container_name: springs_life_odoo
+    ports:
+      - 8102:8069
+    stdin_open: true
+    tty: true
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+      POSTGRES_HOST: odoo18_bm_db
+      POSTGRES_PORT: 5432
+    command:
+      ["odoo", "-c", "/etc/odoo/odoo.conf", "-u", "payment_tap","--dev=xml"] 
+    volumes:
+      - odoo:/var/lib/odoo
+      - ./en_18:/mnt/extra-addons_ent
+      - ./custom_addons:/mnt/extra-addons
+      - ./odoo.conf:/etc/odoo/odoo.conf
+    restart: unless-stopped  
+
+volumes:
+  postgres:
+  odoo:
+

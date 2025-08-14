@@ -1,0 +1,159 @@
+<odoo>
+  <!-- <record id="view_tree_property_room" model="ir.ui.view">
+    <field name="name">property.room.tree</field>
+    <field name="model">property.room</field>
+    <field name="arch" type="xml">
+      <list string="Properties">
+        <field name="room_id"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_form_room" model="ir.ui.view">
+    <field name="name">room.form</field>
+    <field name="model">property.room</field>
+    <field name="arch" type="xml">
+      <form string="Room">
+        <group>
+          <field name="room_id"/>
+          <field name="property_id" readonly="1"/>
+        </group>
+        <notebook>
+          <page string="Components">
+            <field name="property_room_line_ids" mode="list,kanban">
+              <list editable="bottom">
+                <field name="component_id"/>
+              </list>
+              <kanban>
+                <templates>
+                  <t t-name="kanban-box">
+                    <div class="o_kanban_record">
+                      <strong>
+                        <field name="component_id"/>
+                      </strong>
+                    </div>
+                  </t>
+                </templates>
+              </kanban>
+              <form string="Components">
+                <group>
+                  <field name="component_id"/>
+                </group>
+              </form>
+            </field>
+          </page>
+        </notebook>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_property_room_kanban_select" model="ir.ui.view">
+    <field name="name">property.room.kanban.select</field>
+    <field name="model">property.room</field>
+    <field name="arch" type="xml">
+      <kanban>
+        <field name="room_id"/>
+        <templates>
+          <t t-name="kanban-box">
+            <div class="o_kanban_record">
+              <strong><field name="room_id"/></strong>
+            </div>
+          </t>
+        </templates>
+      </kanban>
+    </field>
+  </record>
+
+  <record id="action_property_room" model="ir.actions.act_window">
+    <field name="name">Room</field>
+    <field name="res_model">property.room</field>
+    <field name="view_mode">kanban,list,form</field>
+  </record>
+
+
+  <record id="view_form_room_line" model="ir.ui.view">
+    <field name="name">room.form.line</field>
+    <field name="model">property.room.line</field>
+    <field name="arch" type="xml">
+      <form string="Room">
+        <group>
+          <field name="component_id"/>
+        </group>
+      </form>
+    </field>
+  </record>
+
+
+  <menuitem id="menu_property_room" name="Property Rooms" parent="menu_property_root" action="action_property_room" sequence="2"/> -->
+
+  <!-- <record id="view_property_paint_room_form" model="ir.ui.view">
+    <field name="name">property.room.line.form</field>
+    <field name="model">property.room.line</field>
+    <field name="arch" type="xml">
+        <form string="Room Line">
+            <sheet>
+                <group>
+                    <field name="room_id"/>
+                </group>
+
+                <field name="component_line_ids">
+                    <list editable="bottom">
+                        <field name="component_id"/>
+                        <field name="length"/>
+                        <field name="height"/>
+                    </list>
+                </field>
+            </sheet>
+        </form>
+    </field>
+</record> -->
+
+
+  <record id="view_tree_room_room" model="ir.ui.view">
+    <field name="name">room.room.tree</field>
+    <field name="model">room.room</field>
+    <field name="arch" type="xml">
+      <list string="Rooms">
+        <field name="name"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_form_room_room" model="ir.ui.view">
+    <field name="name">room.room.form</field>
+    <field name="model">room.room</field>
+    <field name="arch" type="xml">
+      <form string="Room">
+        <group>
+          <field name="name"/>
+        </group>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_room_room_kanban_select" model="ir.ui.view">
+    <field name="name">room.room.kanban.select</field>
+    <field name="model">room.room</field>
+    <field name="arch" type="xml">
+      <kanban>
+        <field name="name"/>
+        <templates>
+          <t t-name="kanban-box">
+            <div class="o_kanban_record">
+              <strong><field name="name"/></strong>
+            </div>
+          </t>
+        </templates>
+      </kanban>
+    </field>
+  </record>
+
+  <record id="action_room_room" model="ir.actions.act_window">
+    <field name="name">Rooms</field>
+    <field name="res_model">room.room</field>
+    <field name="view_mode">kanban,list,form</field>
+  </record>
+
+  <menuitem id="menu_room_room" name="Rooms" parent="menu_property_configuration" action="action_room_room" sequence="1"/>
+
+</odoo>

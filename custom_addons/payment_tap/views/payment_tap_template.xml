@@ -1,0 +1,22 @@
+<odoo>
+    <data>
+        <template id="redirect_form" name="Tap Redirect Form">
+            <form t-att-action="api_url" method="get">
+                <t t-foreach="url_params" t-as="param">
+                    <input type="hidden" t-att-name="param" t-att-value="url_params[param]"/>
+                </t>
+            </form>
+        </template>
+
+        <template id="inline_form" name="Tap Inline Form">
+            <t t-set="inline_form_values"
+               t-value="provider_sudo._tap_get_inline_form_values()"/>
+            <div name="o_tap_element_container"
+                 t-att-data-tap-inline-form-values="inline_form_values">
+                <!-- Tap.js will mount the card fields here -->
+                <div id="element-container"></div>
+                <div id="error-message" class="text-danger my-2" role="alert"></div>
+            </div>
+        </template>
+    </data>
+</odoo>
