@@ -26,10 +26,51 @@ class TapController(http.Controller):
     @http.route('/payment/tap/return', type='http', auth='public', csrf=False, save_session=False)
     def tap_return_from_checkout(self, **data):
         _logger.info("Handling Tap return with data:\n%s", pprint.pformat(data))
-        request.env['payment.transaction']._handle_notification_data('tap', data)
+        tx = request.env['payment.transaction']._handle_notification_data('tap', data)
+
+        # import pdb; pdb.set_trace()
+
+        # for payment from backend
+        invoice_id = data.get('invoice_id')
+        if invoice_id:
+            invoice = request.env['account.move'].sudo().browse(int(invoice_id))
+            if invoice.exists():
+
+                payment_method_line_id = request.env['account.payment.method.line'].sudo().search([('code', '=', 'tap')])
+
+                
+                
+                # create a corresponding payment
+                payment = request.env['account.payment'].sudo().create({
+                    'partner_id' : tx.partner_id.id,
+                    'amount' : tx.amount,
+                    'journal_id': tx.provider_id.journal_id.id,
+                    'payment_method_line_id' : payment_method_line_id.id,
+                    'memo' : tx.provider_reference,
+                    'payment_transaction_id' : tx.id,
+                    'invoice_ids': [(4, invoice.id)],
+                })
+
+                payment.action_post()
+
+                tx.payment_id = payment.id
+
+                return request.redirect(f'/odoo/customer-invoices/{invoice_id}')
+            
+
         return request.redirect('/payment/status')
+    
+    # @http.route('/payment/tap/return_backend', type='http', auth='public', csrf=False, save_session=False)
+    # def tap_return_from_checkout(self, **data):
+    #     _logger.info("Handling Tap return with data:\n%s", pprint.pformat(data))
+    #     request.env['payment.transaction']._handle_notification_data('tap', data)
+    #     return request.redirect('/payment/status')
+    
 
 
+    # @http.route('/payment/tap/verify_card', type='json', auth='public')
+    # def tap_verify_card(self, **kw):
+    #     import pdb; pdb.set_trace()
 
 
 

@@ -7,6 +7,7 @@ import { rpc } from "@web/core/network/rpc";
 
 
 paymentForm.include({
+    tapEventListenerAdded: false,
     
     // #=== DOM MANIPULATION ===#
 
@@ -21,7 +22,7 @@ paymentForm.include({
             return;
         }
 
-        
+       
 
         const radio = document.querySelector('input[name="o_payment_radio"]:checked');
         const inlineForm = this._getInlineForm(radio);
@@ -45,9 +46,16 @@ paymentForm.include({
             }
 
             await loadJS("https://goSellJSLib.b-cdn.net/v2.0.0/js/gosell.js");
+            // await loadJS("/payment_tap/static/src/js/config.js")
             // await loadCSS('https://goSellJSLib.b-cdn.net/v2.0.0/imgs/tap-favicon.ico');
             // await loadCSS('https://goSellJSLib.b-cdn.net/v2.0.0/css/gosell.css');
+            
+            // // goSell.openPaymentPage()
+            // goSell.openLightBox()
 
+            
+            this._disableButton(false);
+            
             this._initTapForm(tap_publishable_key);
         }
     },
@@ -56,6 +64,13 @@ paymentForm.include({
      * Initialize the Tap goSellElements form.
      */
     _initTapForm(publishableKey) {
+        
+        // Add the event listener only once.
+        if (!this.tapEventListenerAdded) {
+            window.addEventListener('message', this._handleTapMessage.bind(this), false);
+            this.tapEventListenerAdded = true;
+        }
+
         goSell.goSellElements({
             containerID: 'element-container',
             gateway: {
@@ -63,12 +78,6 @@ paymentForm.include({
                 language: "en",
                 supportedPaymentMethods: "all",
                 notifications: 'standard',
-                labels: {
-                    cardNumber: "Card Number",
-                    expirationDate: "MM/YY",
-                    cvv: "CVV",
-                    cardHolder: "Name on Card",
-                },
                 style: {
                     base: {
                         color: '#535353', lineHeight: '18px', fontFamily: 'sans-serif',
@@ -77,22 +86,37 @@ paymentForm.include({
                     },
                     invalid: { 
                         color: 'red',
-                        iconColor: "#fa755a ",
+                        iconColor: "#fa755a",
                      }
                 },
                 callback: (response) => {
-                    
-                    if (response.error) {
-                        this._displayErrorDialog(_t("Payment Error"), response.error.message);
-                        this._enableButton(true);
-                    } else {
+                    if (response.status =="ACTIVE"){
                         this._createCharge(response.id);
-                        
                     }
                 }
             }
         });
     },
+
+    /**
+     * Handle messages posted from the Tap iframe, specifically for validation errors.
+     */
+    _handleTapMessage(event) {
+        if (event.origin !== "https://secure.gosell.io") {
+            return; // Ignore messages from unknown origins
+        }
+
+        // console.log(event.data)
+        
+        // Based on observation, validation errors are sent with a 'type' property.
+        if (event.data && (event.data.code == 403 || event.data.code == 400)) {
+            this._disableButton(false); // Re-enable the button on validation failure
+        }
+        else if(event.data && event.data.code == 200){
+            this._enableButton(false);
+        }
+    },
+
 
     // #=== PAYMENT FLOW ===#
 
@@ -107,11 +131,17 @@ paymentForm.include({
 
 
         this.paymentContext.reference = processingValues.reference;
-        
-        goSell.submit();
-        // this._enableButton(true);
 
-        // debugger;
+
+        setTimeout(()=>{
+            this._enableButton(true);
+            this._displayErrorDialog(_t("Server Error"),("Request Timeout, Please check Card details."));
+            return;
+        }, 15000)
+
+
+        goSell.submit();
+            
     },
 
     // async _initiatePaymentFlow(providerCode, paymentOptionId, paymentMethodCode, flow) {
@@ -119,16 +149,11 @@ paymentForm.include({
     //         await this._super(...arguments); 
     //         return;
     //     }
-    //     debugger;
+       
 
     //     const _super = this._super.bind(this);
 
-    //     try{
-    //         await goSell.submit();
-    //     }catch(error){
-    //         console.log("Error")
-    //         this._enableButton()
-    //     }
+    //     // goSell.submit();
 
     //     return await _super(...arguments);
        
@@ -167,3 +192,16 @@ paymentForm.include({
 
 
 });
+
+// console.log("here")
+//  window.addEventListener('message', function(event) {
+            
+//             if (event.origin !== "https://secure.gosell.io") {
+//                 return; // Ignore messages from unknown origins
+//             }
+
+            
+
+
+//         }, false);
+

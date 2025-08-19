@@ -5,7 +5,7 @@
     'category': 'Payment',
     'author': 'Ranjeet Rawal',
     'website': 'https://www.codetrade.io',
-    'version': '18.0.0.1',
+    'version': '18.0.1.0',
     'depends': ['payment','account','website'],
     'data': [
        'views/payment_provider_views.xml',
