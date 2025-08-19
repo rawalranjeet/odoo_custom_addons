@@ -15,7 +15,7 @@
     ],
     'assets':{
         'web.assets_frontend':[
-            'payment_tap/static/src/js/payment_form.js',
+            'ct_payment_tap/static/src/js/payment_form.js',
         ],
     },
     'post_init_hook': 'post_init_hook',
