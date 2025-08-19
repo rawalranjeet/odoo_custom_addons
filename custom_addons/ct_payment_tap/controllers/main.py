@@ -28,7 +28,6 @@ class TapController(http.Controller):
         _logger.info("Handling Tap return with data:\n%s", pprint.pformat(data))
         tx = request.env['payment.transaction']._handle_notification_data('tap', data)
 
-        # import pdb; pdb.set_trace()
 
         # for payment from backend
         invoice_id = data.get('invoice_id')
@@ -37,8 +36,6 @@ class TapController(http.Controller):
             if invoice.exists():
 
                 payment_method_line_id = request.env['account.payment.method.line'].sudo().search([('code', '=', 'tap')])
-
-                
                 
                 # create a corresponding payment
                 payment = request.env['account.payment'].sudo().create({
@@ -52,34 +49,20 @@ class TapController(http.Controller):
                 })
 
                 payment.action_post()
-
                 tx.payment_id = payment.id
 
                 return request.redirect(f'/odoo/customer-invoices/{invoice_id}')
             
-
         return request.redirect('/payment/status')
     
-    # @http.route('/payment/tap/return_backend', type='http', auth='public', csrf=False, save_session=False)
-    # def tap_return_from_checkout(self, **data):
-    #     _logger.info("Handling Tap return with data:\n%s", pprint.pformat(data))
-    #     request.env['payment.transaction']._handle_notification_data('tap', data)
-    #     return request.redirect('/payment/status')
-    
 
 
-    # @http.route('/payment/tap/verify_card', type='json', auth='public')
-    # def tap_verify_card(self, **kw):
-    #     import pdb; pdb.set_trace()
-
-
-
-    # @http.route('/payment/tap/webhook', type='json', auth='public', csrf=False)
-    # def tap_webhook(self, **kwargs):
-    #     data = request.jsonrequest
-    #     _logger.info("Handling Tap webhook with data:\n%s", pprint.pformat(data))
-    #     try:
-    #         request.env['payment.transaction']._handle_notification_data('tap', data)
-    #     except Exception as e:
-    #         _logger.exception("Failed to handle Tap webhook notification: %s", e)
-    #     return http.Response(status=200)
+    @http.route('/payment/tap/webhook', type='json', auth='public', csrf=False)
+    def tap_webhook(self, **kwargs):
+        data = request.jsonrequest
+        _logger.info("Handling Tap webhook with data:\n%s", pprint.pformat(data))
+        try:
+            request.env['payment.transaction']._handle_notification_data('tap', data)
+        except Exception as e:
+            _logger.exception("Failed to handle Tap webhook notification: %s", e)
+        return http.Response(status=200)

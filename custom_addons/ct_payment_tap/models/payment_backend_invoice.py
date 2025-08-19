@@ -2,40 +2,12 @@ from odoo import _, fields, models,api
 from werkzeug.urls import url_join
 
 
-class AccountMoveLine(models.Model):
-    _inherit = "account.move.line"
-
-    def action_register_payment(self, ctx=None):
-        # import pdb; pdb.set_trace()
-        ''' Open the account.payment.register wizard to pay the selected journal items.
-        :return: An action opening the account.payment.register wizard.
-        '''
-        context = {
-            'active_model': 'account.move.line',
-            'active_ids': self.ids,
-        }
-        if ctx:
-            context.update(ctx)
-        return {
-            'name': _('Pay'),
-            'res_model': 'account.payment.register',
-            'view_mode': 'form',
-            'views': [[False, 'form']],
-            'context': context,
-            'target': 'new',
-            'type': 'ir.actions.act_window',
-        }
-
-
 class AccountPaymentRegister(models.TransientModel):
     _inherit = "account.payment.register"
 
     def action_create_payments(self):
 
-        # import pdb; pdb.set_trace()
-
         if self.payment_method_code == 'tap':
-
 
             tap_provider = self.env['payment.provider'].search([('code', '=', 'tap')], limit=1)
             tap_payment_method = self.env['payment.method'].search([('code', '=', 'tap')], limit=1)
@@ -75,7 +47,7 @@ class AccountPaymentRegister(models.TransientModel):
 
             tx.provider_reference = response_data.get('id')
 
-            # Return an action to open the payment link in a new tab
+            # Return an action to open the payment link in current tab
             return {
                 'type': 'ir.actions.act_url',
                 'url': redirect_url,
@@ -83,30 +55,4 @@ class AccountPaymentRegister(models.TransientModel):
             }
             
         else:
-
-            if self.is_register_payment_on_draft:
-                self.payment_difference_handling = 'open'
-            payments = self._create_payments()
-
-            if self._context.get('dont_redirect_to_payments'):
-                return True
-
-            action = {
-                'name': _('Payments'),
-                'type': 'ir.actions.act_window',
-                'res_model': 'account.payment',
-                'context': {'create': False},
-            }
-            if len(payments) == 1:
-                action.update({
-                    'view_mode': 'form',
-                    'res_id': payments.id,
-                })
-            else:
-                action.update({
-                    'view_mode': 'list,form',
-                    'domain': [('id', 'in', payments.ids)],
-                })
-            return action
-        
-
+            return super().action_create_payments()

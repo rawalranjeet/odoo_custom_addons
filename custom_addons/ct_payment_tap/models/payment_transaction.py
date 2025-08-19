@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-import logging
 from werkzeug import urls
 from odoo import _, api, models
 from odoo.exceptions import ValidationError
 
-_logger = logging.getLogger(__name__)
 
 class PaymentTransactionTap(models.Model):
     _inherit = 'payment.transaction'

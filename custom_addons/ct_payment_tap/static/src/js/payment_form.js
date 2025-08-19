@@ -22,8 +22,6 @@ paymentForm.include({
             return;
         }
 
-       
-
         const radio = document.querySelector('input[name="o_payment_radio"]:checked');
         const inlineForm = this._getInlineForm(radio);
         const tapContainer = inlineForm.querySelector('[name="o_tap_element_container"]');
@@ -37,6 +35,7 @@ paymentForm.include({
         }
         
         this._setPaymentFlow('direct');
+        
 
         if (typeof goSell === 'undefined') {
             
@@ -45,17 +44,14 @@ paymentForm.include({
                 return;
             }
 
-            await loadJS("https://goSellJSLib.b-cdn.net/v2.0.0/js/gosell.js");
-            // await loadJS("/payment_tap/static/src/js/config.js")
-            // await loadCSS('https://goSellJSLib.b-cdn.net/v2.0.0/imgs/tap-favicon.ico');
-            // await loadCSS('https://goSellJSLib.b-cdn.net/v2.0.0/css/gosell.css');
             
-            // // goSell.openPaymentPage()
-            // goSell.openLightBox()
-
+            // Load required js and css for Tap Payments
+            await loadJS("https://goSellJSLib.b-cdn.net/v2.0.0/js/gosell.js");
+            await loadCSS('https://goSellJSLib.b-cdn.net/v2.0.0/imgs/tap-favicon.ico');
+            await loadCSS('https://goSellJSLib.b-cdn.net/v2.0.0/css/gosell.css');
             
             this._disableButton(false);
-            
+
             this._initTapForm(tap_publishable_key);
         }
     },
@@ -106,11 +102,8 @@ paymentForm.include({
             return; // Ignore messages from unknown origins
         }
 
-        // console.log(event.data)
-        
-        // Based on observation, validation errors are sent with a 'type' property.
-        if (event.data && (event.data.code == 403 || event.data.code == 400)) {
-            this._disableButton(false); // Re-enable the button on validation failure
+        if (event.data && (event.data.code == 403 || event.data.error_interactive)) {
+            this._disableButton(false); 
         }
         else if(event.data && event.data.code == 200){
             this._enableButton(false);
@@ -129,36 +122,12 @@ paymentForm.include({
             return;
         }
 
-
         this.paymentContext.reference = processingValues.reference;
-
-
-        setTimeout(()=>{
-            this._enableButton(true);
-            this._displayErrorDialog(_t("Server Error"),("Request Timeout, Please check Card details."));
-            return;
-        }, 15000)
-
 
         goSell.submit();
             
     },
 
-    // async _initiatePaymentFlow(providerCode, paymentOptionId, paymentMethodCode, flow) {
-    //     if (providerCode !== 'tap' ) {
-    //         await this._super(...arguments); 
-    //         return;
-    //     }
-       
-
-    //     const _super = this._super.bind(this);
-
-    //     // goSell.submit();
-
-    //     return await _super(...arguments);
-       
-        
-    // },
     /**
      * Create the charge on the backend using the token.
      */
@@ -192,16 +161,3 @@ paymentForm.include({
 
 
 });
-
-// console.log("here")
-//  window.addEventListener('message', function(event) {
-            
-//             if (event.origin !== "https://secure.gosell.io") {
-//                 return; // Ignore messages from unknown origins
-//             }
-
-            
-
-
-//         }, false);
-

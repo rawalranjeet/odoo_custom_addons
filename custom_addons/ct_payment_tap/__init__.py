@@ -12,16 +12,6 @@ def post_init_hook(env):
 
     
 def uninstall_hook(env):
-    """Reset the acquirers of the module.
+    """Reset the providers of the module.
     This hook is called before the module uninstallation."""
     reset_payment_provider(env, 'tap')
-
-
-
-
-
-
-
-
-
-

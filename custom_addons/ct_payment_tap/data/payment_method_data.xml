@@ -4,7 +4,7 @@
     <record id="payment_method_tap" model="payment.method">
         <field name="name">Tap</field>
         <field name="sequence">1000</field>
-        <field name="image" type="base64" file="payment_tap/static/img/tap.png"/>
+        <field name="image" type="base64" file="ct_payment_tap/static/description/icon.png"/>
         <field name="code">tap</field>
         <field name="active">True</field>
     </record>

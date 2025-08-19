@@ -26,7 +26,7 @@ services:
       POSTGRES_HOST: odoo18_bm_db
       POSTGRES_PORT: 5432
     command:
-      ["odoo", "-c", "/etc/odoo/odoo.conf", "-u", "payment_tap","--dev=xml"] 
+      ["odoo", "-c", "/etc/odoo/odoo.conf", "-u", "ct_payment_tap","--dev=xml"] 
     volumes:
       - odoo:/var/lib/odoo
       - ./en_18:/mnt/extra-addons_ent

@@ -7,16 +7,15 @@
         <field name="state">disabled</field>
         <field name="redirect_form_view_id" ref="redirect_form"/>
         <field name="inline_form_view_id" ref="inline_form"/>
-        <field name="image_128" type="base64" file="payment_tap/static/img/tap.png"/>
-        <field name="module_id" ref="base.module_payment_tap"/>
+        <field name="image_128" type="base64" file="ct_payment_tap/static/description/icon.png"/>
+        <field name="module_id" ref="base.module_ct_payment_tap"/>
         <field name="payment_method_ids"
                eval="[Command.set([
+                        ref('ct_payment_tap.payment_method_tap'),
                         ref('payment.payment_method_card'),
-                        ref('payment_tap.payment_method_tap')
+                        ref('payment.payment_method_knet'),
                      ])]"
         />
     </record>
 
 </odoo>
-
-<!-- ref('payment_tap.payment_method_tap'), -->
