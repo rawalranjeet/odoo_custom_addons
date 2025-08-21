@@ -1,0 +1,41 @@
+<odoo>
+    <record id="view_membership_duration_list" model="ir.ui.view">
+        <field name="name">membership.duration.list</field>
+        <field name="model">membership.duration</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="duration_value"/>
+                <field name="product_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_membership_duration_form" model="ir.ui.view">
+        <field name="name">membership.duration.form</field>
+        <field name="model">membership.duration</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="name"/>
+                    <field name="duration_value"/>
+                    <field name="product_id"/>
+                </group>        
+            </form>
+        </field>
+    </record>
+
+    <record id="action_membership_duration" model="ir.actions.act_window">
+        <field name="name">Membership Durations</field>
+        <field name="res_model">membership.duration</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_duration_root" name="Durations" sequence="15"/>
+    <menuitem id="menu_manage_duration" 
+            name="Manage Durations" 
+            parent="menu_duration_root" 
+            action="action_membership_duration" 
+            sequence="1"/>
+
+</odoo>

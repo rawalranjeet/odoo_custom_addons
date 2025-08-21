@@ -9,8 +9,7 @@
             <group name="provider_credentials" position='inside'>
                 <group name="tap_credentials" invisible="code != 'tap'">
                     <field name="tap_publishable_key"
-                        invisible = "tap_payment_flow_type == 'redirect'"
-                        required="code == 'tap' and state != 'disabled' and tap_payment_flow_type == 'direct'"/>
+                        required="code == 'tap' and state != 'disabled'"/>
 
                     <field name="tap_secret_key" string="Secret Key" password="True"
                         required="code == 'tap' and state != 'disabled' "/>

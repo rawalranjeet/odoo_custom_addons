@@ -1,0 +1,12 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_website_member_user,access_website_member_user,model_website_member,base.group_user,1,1,1,1
+access_membership,access_membership,model_membership_membership,base.group_system,1,1,1,1
+access_membership_duration,membership.duration,model_membership_duration,base.group_system,1,1,1,1
+access_website_member_user,access.website.member.user,model_website_member,base.group_user,1,1,1,1
+access_membership_membership_user,access.membership.membership.user,model_membership_membership,base.group_user,1,1,1,1
+access_website_member_manager,access.website.member.manager,model_website_member,base.group_system,1,1,1,1
+access_membership_membership_manager,access.membership_membership.manager,model_membership_membership,base.group_system,1,1,1,1
+access_website_member_internal,access_website_member_internal,model_website_member,base.group_user,1,1,1,1
+access_membership_membership_internal,access_membership_membership_internal,model_membership_membership,base.group_user,1,1,1,1
+access_membership_duration_internal,access_membership_duration_internal,model_membership_duration,base.group_user,1,1,1,1
+access_website_member_public,access.website.member.public,model_website_member,base.group_public,1,0,0,0

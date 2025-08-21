@@ -26,7 +26,8 @@ class PaymentProviderTap(models.Model):
     )
 
     tap_3ds_verification = fields.Boolean(
-        string = "Require 3DS Verfication?"
+        string = "Require 3DS Verfication?",
+        default = True
     )
 
     tap_payment_flow_type = fields.Selection(
@@ -59,16 +60,19 @@ class PaymentProviderTap(models.Model):
             if method == 'GET':
                 response = requests.get(url, params=payload, headers=headers, timeout=10)
             else: # POST
+                
                 payload['threeDSecure'] = self.tap_3ds_verification
                 response = requests.post(url, json=payload, headers=headers, timeout=20)
             
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
+            # import pdb; pdb.set_trace()
             _logger.exception("Invalid API request at %s with data:\n%s", url, pprint.pformat(payload))
-            raise ValidationError("Tap: " + _("The communication with the API failed. Please check your credentials."))
+            raise ValidationError("Tap: " + _(e.response.json().get('errors')[0].get('description')))
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             _logger.exception("Unable to reach endpoint at %s", url)
             raise ValidationError("Tap: " + _("Could not establish the connection to the API."))
+
         
         return response.json()
 

@@ -17,6 +17,15 @@
                 <div id="element-container"></div>
             </div>
         </template>
+
+        <!-- <template id = "payment_tap_flow_type" inherit_id = "payment.form">
+            <xpath expr="//div[@id='o_payment_methods']" position="inside">
+                <div id="payment_tap_flow_type" style="display:none;" class="mt-2">
+                    <label for="redirect" class="cursor-pointer me-4"><input type="radio" id="redirect" name="payment_tap_flow_type_input" value="redirect" class="form-check-input cursor-pointer me-1" checked="1"/>Redirect</label>
+                    <label for="direct" class="cursor-pointer me-4"><input type="radio" id="direct" name="payment_tap_flow_type_input" value="direct" class="form-check-input cursor-pointer me-1"/>Direct</label>
+                </div>
+            </xpath>
+        </template> -->
         
     </data>
 </odoo>

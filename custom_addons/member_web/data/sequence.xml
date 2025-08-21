@@ -1,0 +1,9 @@
+<odoo noupdate="1">
+    <record id="seq_membership" model="ir.sequence">
+        <field name="name">Membership Reference</field>
+        <field name="code">membership.membership</field>
+        <field name="prefix">MEM</field>
+        <field name="padding">4</field>
+        <field name="number_next">1</field>
+    </record>
+</odoo>

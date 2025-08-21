@@ -1,0 +1,29 @@
+<odoo>
+    <record id="rule_website_member_admin" model="ir.rule">
+        <field name="name">Website Member: Admins See All</field>
+        <field name="model_id" ref="model_website_member"/>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+     
+    <record id="rule_website_member_user" model="ir.rule">
+        <field name="name">Website Member: Own Records Only</field>
+        <field name="model_id" ref="model_website_member"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_membership_admin" model="ir.rule">
+        <field name="name">Membership: Admins See All</field>
+        <field name="model_id" ref="model_membership_membership"/>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_membership_user" model="ir.rule">
+        <field name="name">Membership: Own Records Only</field>
+        <field name="model_id" ref="model_membership_membership"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+    </record>
+</odoo>

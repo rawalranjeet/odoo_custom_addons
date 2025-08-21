@@ -8,14 +8,21 @@ import { rpc } from "@web/core/network/rpc";
 
 paymentForm.include({
     tapEventListenerAdded: false,
-    
-    // #=== DOM MANIPULATION ===#
+
+    async _selectPaymentOption(ev){
+        const paymentMethodCode = ev.target.dataset.paymentMethodCode
+        await this._super(...arguments)
+
+        if (paymentMethodCode === 'tap_direct'){
+            this._disableButton()
+        }
+    },
 
     /**
      * Prepare the inline form for Tap by creating the card element.
      */
     async _prepareInlineForm(providerId, providerCode, paymentOptionId, paymentMethodCode, flow) {
-
+        
         await this._super(...arguments);
 
         if (providerCode !== 'tap') {
@@ -28,9 +35,10 @@ paymentForm.include({
         const tapInlineFormValues = JSON.parse(tapContainer.dataset.tapInlineFormValues);
         
         const tap_publishable_key = tapInlineFormValues.publishable_key;
-        const tap_payment_flow_type = tapInlineFormValues.tap_payment_flow_type
+        // const tap_payment_flow_type = tapInlineFormValues.tap_payment_flow_type
+        
 
-        if (tap_payment_flow_type === 'redirect'){
+        if (paymentMethodCode === 'tap_redirect'){
             return;
         }
         
@@ -50,7 +58,7 @@ paymentForm.include({
             await loadCSS('https://goSellJSLib.b-cdn.net/v2.0.0/imgs/tap-favicon.ico');
             await loadCSS('https://goSellJSLib.b-cdn.net/v2.0.0/css/gosell.css');
             
-            this._disableButton(false);
+            
 
             this._initTapForm(tap_publishable_key);
         }
@@ -72,7 +80,7 @@ paymentForm.include({
             gateway: {
                 publicKey: publishableKey,
                 language: "en",
-                supportedPaymentMethods: "all",
+                supportedPaymentMethods: 'all',
                 notifications: 'standard',
                 style: {
                     base: {
@@ -161,3 +169,70 @@ paymentForm.include({
 
 
 });
+
+
+
+// #=== DOM MANIPULATION ===#
+
+    // async _change_flow(providerId, providerCode, paymentOptionId, paymentMethodCode, flow){
+    //     const radios = document.querySelectorAll('input[name="payment_tap_flow_type_input"]');
+    //     radios.forEach(radio => {
+    //         radio.addEventListener('change', async() => {
+    //             const selectedRadio = document.querySelector('input[name="payment_tap_flow_type_input"]:checked');
+                
+    //             // console.log("flow changed")
+                
+
+    //             // ----------
+               
+    //             this._collapseInlineForms();
+    //             this._setPaymentFlow(selectedRadio.value);
+
+    //             if (selectedRadio.value === 'redirect'){
+    //                 return;
+    //             }
+
+    //             const paymentradio = document.querySelector('input[name="o_payment_radio"]:checked');
+
+    //             // Prepare the inline form of the selected payment option.
+    //             const providerId = this._getProviderId(paymentradio);
+    //             const providerCode = this._getProviderCode(paymentradio);
+    //             const paymentOptionId = this._getPaymentOptionId(paymentradio);
+    //             const paymentMethodCode = this._getPaymentMethodCode(paymentradio);
+    //             const flow = this._getPaymentFlow(paymentradio);
+    //             await this._prepareInlineForm(
+    //                 providerId, providerCode, paymentOptionId, paymentMethodCode, flow
+    //             );
+
+    //             // Display the prepared inline form if it is not empty.
+    //             const inlineForm = this._getInlineForm(paymentradio);
+    //             if (inlineForm && inlineForm.children.length > 0) {
+    //                 inlineForm.classList.remove('d-none');
+    //             }
+
+    //         });
+    //     })
+    // },
+
+    // async start(){
+    //     this._change_flow()
+    //     return this._super()
+    // },
+    
+
+    // async _selectPaymentOption(ev){
+    //     const providerCode = ev.target.dataset.providerCode
+
+    //     const payment_tap_flow_type_div = document.getElementById("payment_tap_flow_type")
+
+    //     if (payment_tap_flow_type_div){
+    //         if (providerCode === 'tap'){
+    //             payment_tap_flow_type_div.style.display = 'block'
+    //         }
+    //         else{
+    //             payment_tap_flow_type_div.style.display = 'none'
+    //         }
+    //     }
+
+    //     return await this._super(...arguments)
+    // },

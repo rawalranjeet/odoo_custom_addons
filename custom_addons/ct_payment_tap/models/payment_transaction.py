@@ -23,9 +23,10 @@ class PaymentTransactionTap(models.Model):
         res = super()._get_specific_rendering_values(processing_values)
         if self.provider_code != 'tap':
             return res
+        
 
-        if self.provider_id.tap_payment_flow_type == 'direct':
-            res['tap_publishable_key'] = self.provider_id.tap_publishable_key
+        if self.payment_method_id.code == 'tap_direct':
+            # res['tap_publishable_key'] = self.provider_id.tap_publishable_key
             return res
         
         else: # Redirect flow

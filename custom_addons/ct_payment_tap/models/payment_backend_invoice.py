@@ -10,7 +10,7 @@ class AccountPaymentRegister(models.TransientModel):
         if self.payment_method_code == 'tap':
 
             tap_provider = self.env['payment.provider'].search([('code', '=', 'tap')], limit=1)
-            tap_payment_method = self.env['payment.method'].search([('code', '=', 'tap')], limit=1)
+            tap_payment_method = self.env['payment.method'].search([('code', '=', 'tap_redirect')], limit=1)
 
             # Create a payment transaction instead of a standard payment
             invoice = self.env['account.move'].browse(self._context.get('active_id'))

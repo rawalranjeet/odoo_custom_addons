@@ -1,0 +1,99 @@
+<odoo>
+	<record id="view_membership_form" model="ir.ui.view">
+		<field name="name">membership.membership.form</field>
+		<field name="model">membership.membership</field>
+		<field name="arch" type="xml">
+			<form string="Membership">
+				<header>
+					<button name="action_request" type="object" string="Request"
+                        invisible="state != 'draft'" class="btn-primary"/>
+					<button name="action_confirm" type="object" string="Confirm"
+                            invisible="state != 'request'" class="btn-success"/>
+					<button name="action_create_invoice" type="object" string="Create Invoice"
+                        invisible="state != 'confirm' or invoice_ids"
+                        class="btn-info"/>
+					<button name="action_activate" type="object" string="Activate"
+                            invisible="state != 'confirm' or not invoice_ids" class="btn-success"/>
+					<button name="action_expire" type="object" string="Expire"
+                            invisible="state != 'active'" class="btn-secondary"/>
+					<field name="state" widget="statusbar"
+                           statusbar_visible="draft,request,confirm,active,expired"/>
+				</header>
+				<sheet>
+					<div class="oe_button_box" name="button_box">
+						<button class="oe_stat_button" type="object" name="action_open_invoices" icon="oi-launch" invisible="state in ('draft', 'request')">
+							<div class="o_stat_info">
+								<span class="o_stat_text">Invoices</span>
+								<span class="o_stat_value">
+									<field name="invoice_count"/>
+								</span>
+							</div>
+						</button>
+					</div>
+					<group>
+						<group>
+							<field name="member_id" domain="[('user_id', '!=', False)]"/>
+							<field name="duration_id"/>
+							<field name="product_id" readonly="1"/>
+							<field name="membership_fees"/>
+							<field name="description"/>
+						</group>
+						<group>
+							<field name="email"/>
+							<field name="request_date"/>
+							<field name="membership_date"/>
+							<field name="expiry_date"/>
+							<field name="responsible_id"/>
+							<field name="company_id"/>
+						</group>
+					</group>
+				</sheet>
+			</form>
+		</field>
+	</record>
+	<record id="view_membership_list" model="ir.ui.view">
+		<field name="name">membership.membership.list</field>
+		<field name="model">membership.membership</field>
+		<field name="arch" type="xml">
+			<list>
+				<field name="name"/>
+				<field name="member_id"/>
+				<field name="product_id"/>
+				<field name="membership_fees"/>
+				<field name="state"/>
+			</list>
+		</field>
+	</record>
+	<record id="view_move_form_inherit_membership" model="ir.ui.view">
+		<field name="name">account.move.form.membership.inherit</field>
+		<field name="model">account.move</field>
+		<field name="inherit_id" ref="account.view_move_form"/>
+		<field name="arch" type="xml">
+			<xpath expr="//sheet/group" position="inside">
+				<group string="Membership Details" colspan="2">
+					<group>
+						<field name="membership_date"/>
+						<field name="expiry_date"/>
+					</group>
+				</group>
+			</xpath>
+		</field>
+	</record>
+	<record id="action_membership" model="ir.actions.act_window">
+		<field name="name">Memberships</field>
+		<field name="res_model">membership.membership</field>
+		<field name="view_mode">list,form</field>
+	</record>
+	<record id="action_invoice_list" model="ir.actions.act_window">
+		<field name="name">Invoices</field>
+		<field name="res_model">account.move</field>
+		<field name="view_mode">list,form</field>
+		<field name="domain">[('membership_id', '=', active_id)]</field>
+	</record>
+	<menuitem id="menu_membership_root" name="Membership" sequence="20"/>
+	<menuitem id="menu_manage_membership"
+            name="Manage Memberships"
+            parent="menu_membership_root"
+            action="action_membership"
+            sequence="1"/>
+</odoo>

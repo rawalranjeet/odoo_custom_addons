@@ -1,0 +1,86 @@
+<odoo>
+	<record id="view_website_member_list" model="ir.ui.view">
+		<field name="name">website.member.list</field>
+		<field name="model">website.member</field>
+		<field name="arch" type="xml">
+			<list>
+				<field name="name"/>
+				<field name="dob"/>
+			</list>
+		</field>
+	</record>
+	<record id="view_website_member_form" model="ir.ui.view">
+		<field name="name">website.member.form</field>
+		<field name="model">website.member</field>
+		<field name="arch" type="xml">
+			<form string="Website Member">
+				<sheet>
+					<div class="oe_button_box" name="button_box">
+						<button name="action_view_member_invoices"
+                                        type="object"
+                                        class="oe_stat_button"
+                                        icon="fa-file-text-o">
+							<div class="o_stat_info">
+								<span class="o_stat_value">
+									<field name="invoice_count" widget="statinfo" nolabel="1"/>
+								</span>
+								<span class="o_stat_text">Invoices</span>
+							</div>
+						</button>
+					</div>
+					<group>
+						<field name="name"/>
+						<field name="height"/>
+						<field name="weight"/>
+						<field name="dob"/>
+						<field name="email"/>
+						<field name="partner_id"/>
+						<field name="medical_info"/>
+						<field name="member_document_filename"/>
+						<field name="member_document" filename="member_document_filename"/>
+					</group>
+					<notebook>
+						<page string="Memberships">
+							<field name="membership_ids">
+								<list>
+									<field name="name"/>
+									<field name="product_id"/>
+									<field name="membership_fees"/>
+									<field name="state"/>
+								</list>
+							</field>
+						</page>
+					</notebook>
+				</sheet>
+			</form>
+		</field>
+	</record>
+	<!-- Member Page -->
+	<record id="website_menu_member" model="website.menu">
+		<field name="name">Members</field>
+		<field name="url">/member/list</field>
+		<field name="parent_id" ref="website.main_menu"/>
+		<field name="sequence">60</field>
+	</record>
+	<!-- Register Page -->
+	<record id="website_menu_register" model="website.menu">
+		<field name="name">Register</field>
+		<field name="url">/member/register</field>
+		<field name="parent_id" ref="website.main_menu"/>
+		<field name="sequence">70</field>
+	</record>
+	<!-- Membership Page -->
+	<record id="website_menu_membership" model="website.menu">
+		<field name="name">Membership</field>
+		<field name="url">/membership/list</field>
+		<field name="parent_id" ref="website.main_menu"/>
+		<field name="sequence">80</field>
+	</record>
+	<record id="action_website_member" model="ir.actions.act_window">
+		<field name="name">Website Members</field>
+		<field name="res_model">website.member</field>
+		<field name="view_mode">list,form</field>
+	</record>
+	<menuitem id="menu_member_root" name="Members" sequence="10"/>
+	<menuitem id="menu_member" name="Manage Members" parent="menu_member_root" action="action_website_member" sequence="1"/>
+</odoo>

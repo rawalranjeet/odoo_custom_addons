@@ -1,12 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <record id="payment_method_tap" model="payment.method">
+    <!-- <record id="payment_method_tap" model="payment.method">
         <field name="name">Tap</field>
         <field name="sequence">1000</field>
         <field name="image" type="base64" file="ct_payment_tap/static/description/icon.png"/>
         <field name="code">tap</field>
         <field name="active">True</field>
+    </record> -->
+
+    <record id="payment_method_tap_direct" model="payment.method">
+        <field name="name">Tap Direct</field>
+        <field name="sequence">1000</field>
+        <field name="image" type="base64" file="ct_payment_tap/static/description/icon.png"/>
+        <field name="code">tap_direct</field>
+        <field name="active">True</field>
     </record>
+
+    <record id="payment_method_tap_redirect" model="payment.method">
+        <field name="name">Tap Redirect</field>
+        <field name="sequence">1001</field>
+        <field name="image" type="base64" file="ct_payment_tap/static/description/icon.png"/>
+        <field name="code">tap_redirect</field>
+        <field name="active">True</field>
+    </record>
+
+
+
 
 </odoo>
