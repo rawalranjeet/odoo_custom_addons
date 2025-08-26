@@ -25,12 +25,15 @@ paymentForm.include({
         
         await this._super(...arguments);
 
-        if (providerCode !== 'tap') {
+        if (providerCode !== 'tap' || flow === 'token') {
             return;
         }
 
         const radio = document.querySelector('input[name="o_payment_radio"]:checked');
         const inlineForm = this._getInlineForm(radio);
+        if (!inlineForm){
+            return;
+        }
         const tapContainer = inlineForm.querySelector('[name="o_tap_element_container"]');
         const tapInlineFormValues = JSON.parse(tapContainer.dataset.tapInlineFormValues);
         
@@ -57,7 +60,6 @@ paymentForm.include({
             await loadJS("https://goSellJSLib.b-cdn.net/v2.0.0/js/gosell.js");
             await loadCSS('https://goSellJSLib.b-cdn.net/v2.0.0/imgs/tap-favicon.ico');
             await loadCSS('https://goSellJSLib.b-cdn.net/v2.0.0/css/gosell.css');
-            
             
 
             this._initTapForm(tap_publishable_key);
@@ -166,6 +168,32 @@ paymentForm.include({
             this._displayErrorDialog(_t("Technical Error"), _t("An error occurred while creating the charge."));
         }
     },
+
+     /**
+     * Allow forcing redirect to authorization url for Tap token flow.
+     *
+     * @override method from @payment/js/payment_form
+     * @private
+     * @param {string} providerCode - The code of the selected payment option's provider.
+     * @param {number} paymentOptionId - The id of the selected payment option.
+     * @param {string} paymentMethodCode - The code of the selected payment method, if any.
+     * @param {object} processingValues - The processing values of the transaction.
+     * @return {void}
+     */
+    _processTokenFlow(providerCode, paymentOptionId, paymentMethodCode, processingValues) {
+        if (providerCode === 'tap' && processingValues.redirect_form_html) {
+            // Authorization uses POST instead of GET
+            const redirect_form_html = processingValues.redirect_form_html.replace(
+                /method="get"/, 'method="post"'
+            )
+            this._processRedirectFlow(providerCode, paymentOptionId, paymentMethodCode, {
+                ...processingValues,
+                redirect_form_html,
+            });
+        } else {
+            this._super(...arguments);
+        }
+    }
 
 
 });

@@ -52,8 +52,9 @@ class PaymentProviderTap(models.Model):
         self.ensure_one()
         url = urls.url_join(self._get_tap_api_url(), endpoint)
         headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
             'Authorization': f'Bearer {self.tap_secret_key}',
-            'Content-Type': 'application/json'
         }
 
         try:
