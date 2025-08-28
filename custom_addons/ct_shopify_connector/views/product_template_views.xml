@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="shopify_products_view_action" model="ir.actions.act_window">
+        <field name="name">Shopify Products</field>
+        <field name="res_model">product.template</field>
+        <field name="domain">[('shopify_product_id','!=',False)]</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+
+
+
+    <menuitem
+        id="menu_shopify_products"
+        name="Shopify Products"
+        parent="menu_shopify_root"
+        sequence="3"
+        />
+
+    <menuitem
+        id="menu_shopify_products_list"
+        name="Products"
+        action="shopify_products_view_action"
+        parent="menu_shopify_products"
+        sequence="1"
+        />
+
+    
+
+</odoo>

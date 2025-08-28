@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="shopify_customers_view_action" model="ir.actions.act_window">
+        <field name="name">Shopify Customers</field>
+        <field name="res_model">res.partner</field>
+        <field name="domain">[('shopify_customer_id','!=',False)]</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+
+    <record id="res_partner_view_form_inherit" model="ir.ui.view">
+        <field name="name">res.partner.view.form.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="shopify_customer_id" string="Shopify Customer Id" readonly = "True"/>
+                <field name="shopify_store_id" string="Shopify Store Id" readonly = "True"/>
+            </xpath>
+        </field>
+    </record>
+
+
+    <menuitem
+        id="menu_shopify_customers"
+        name="Shopify Customers"
+        parent="menu_shopify_root"
+        sequence="4"
+        />
+
+    <menuitem
+        id="menu_shopify_customers_list"
+        name="Customers"
+        action="shopify_customers_view_action"
+        parent="menu_shopify_customers"
+        sequence="1"
+        />
+
+    
+
+</odoo>

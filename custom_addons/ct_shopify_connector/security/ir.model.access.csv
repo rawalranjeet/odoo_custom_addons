@@ -1,4 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_shopify_store,shopify_store,model_shopify_store,,1,1,1,1
 access_shopify_webhooks,shopify_webhooks,model_shopify_webhooks,,1,1,1,1
-access_shopify_products,shopify_products,model_shopify_products,,1,1,1,1
+access_shopify_customers_wizard,shopify_customers_wizard,model_shopify_customers_wizard,,1,1,1,1
+access_shopify_products_wizard,shopify_products_wizard,model_shopify_products_wizard,,1,1,1,1
