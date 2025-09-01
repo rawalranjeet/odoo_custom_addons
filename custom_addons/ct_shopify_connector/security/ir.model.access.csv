@@ -3,3 +3,4 @@ access_shopify_store,shopify_store,model_shopify_store,,1,1,1,1
 access_shopify_webhooks,shopify_webhooks,model_shopify_webhooks,,1,1,1,1
 access_shopify_customers_wizard,shopify_customers_wizard,model_shopify_customers_wizard,,1,1,1,1
 access_shopify_products_wizard,shopify_products_wizard,model_shopify_products_wizard,,1,1,1,1
+access_shopify_orders_wizard,shopify_orders_wizard,model_shopify_orders_wizard,,1,1,1,1

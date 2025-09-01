@@ -9,6 +9,9 @@ class ShopifyCustomersWizard(models.TransientModel):
     shopify_store_id = fields.Many2one("shopify.store", required=True)
 
     def action_get_customers(self):
+        if self.shopify_store_id.state != 'connected':
+            raise UserError("Selected Store is not Connected, Please connect the Store First")
+        
         url = f'https://{self.shopify_store_id.shopify_store_name}.myshopify.com/admin/api/2025-07/customers.json'
         
         headers = {

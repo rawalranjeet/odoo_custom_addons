@@ -7,12 +7,15 @@
         <field name="arch" type="xml">
             <form string="">
                 <header>
-                    <button string="Test Connection" type="object" name = "action_test_connection" class="btn btn-primary"/>
+                    <button string="Connect" type="object" name = "action_test_connection" class="btn btn-primary" invisible="state == 'connected'"/>
+                    <button string="Disconnect" type="object" name = "action_disconnect" class="btn btn-danger" invisible="state!='connected'"/>
+                    <field name="state" widget="statusbar"/>
                 </header>
                 <group name="credentials">
                      <field name="name" />
-                    <field name="shopify_store_name" />
-                    <field name="shopify_access_token" />
+                    <field name="shopify_store_name" readonly="state!='draft'"/>
+                    <field name="shopify_access_token" readonly="state!='draft'"/>
+                    <field name="currency_id" readonly="True"/>
                 </group>
                
             </form>

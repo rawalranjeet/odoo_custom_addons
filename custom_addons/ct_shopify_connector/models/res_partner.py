@@ -6,8 +6,5 @@ class ResPartner(models.Model):
     shopify_customer_id = fields.Char()
     shopify_store_id = fields.Many2one("shopify.store")
 
-
-   
     
-
     

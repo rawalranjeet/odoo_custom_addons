@@ -4,7 +4,7 @@
     <record id="shopify_customers_view_action" model="ir.actions.act_window">
         <field name="name">Shopify Customers</field>
         <field name="res_model">res.partner</field>
-        <field name="domain">[('shopify_customer_id','!=',False)]</field>
+        <field name="domain">[('shopify_customer_id','!=',False),('parent_id','=',False)]</field>
         <field name="view_mode">kanban,list,form</field>
     </record>
 

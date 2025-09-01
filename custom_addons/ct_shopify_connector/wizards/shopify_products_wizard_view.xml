@@ -8,6 +8,7 @@
             <form string="">
                <group >
                     <field name="shopify_store_id" />
+                    <field name="import_with_image" />
                </group>
                <footer>
                     <button string = "Confirm" name="action_get_products" type="object" class="btn btn-primary"/>
@@ -28,7 +29,7 @@
         name="Get Shopify Products"
         action="shopify_products_sync_wizard_action"
         parent="menu_shopify_products"
-        sequence="2"
+        sequence="3"
         />
 
 </odoo>

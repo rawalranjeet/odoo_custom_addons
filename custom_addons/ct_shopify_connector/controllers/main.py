@@ -5,6 +5,7 @@ import json
 class TestController(http.Controller):
     @http.route('/shopify/webhook/products', type='json', auth='public', methods=['POST'], csrf=False)
     def shopify_webhook_products(self):
+        return
 
         data = json.loads(request.httprequest.data)
 
