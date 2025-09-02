@@ -12,6 +12,7 @@
        'views/payment_tap_template.xml',
        'data/payment_method_data.xml',
        'data/payment_provider_data.xml',
+       'data/service_cron.xml',
     ],
     'assets':{
         'web.assets_frontend':[

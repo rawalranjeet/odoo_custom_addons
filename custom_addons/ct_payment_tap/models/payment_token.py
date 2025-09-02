@@ -7,5 +7,6 @@ class PaymentToken(models.Model):
 
     tap_customer_id = fields.Char()
     tap_card_id = fields.Char()
+    tap_payment_agreement_id = fields.Char()
 
     

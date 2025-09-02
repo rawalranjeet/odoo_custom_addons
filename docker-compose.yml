@@ -2,8 +2,6 @@ services:
   db:
     image: postgres:16
     container_name: springs_life_db
-    ports:
-      - "5101:5432"
     environment:
       POSTGRES_USER: odoo
       POSTGRES_PASSWORD: odoo
@@ -23,10 +21,10 @@ services:
     environment:
       POSTGRES_USER: odoo
       POSTGRES_PASSWORD: odoo
-      POSTGRES_HOST: odoo18_bm_db
+      POSTGRES_HOST: db
       POSTGRES_PORT: 5432
     command:
-      ["odoo", "-c", "/etc/odoo/odoo.conf", "-u", "ct_payment_tap","--dev=xml"] 
+      ["odoo", "-c", "/etc/odoo/odoo.conf", "-u","ct_payment_tap" ,"--dev=xml"] 
     volumes:
       - odoo:/var/lib/odoo
       - ./en_18:/mnt/extra-addons_ent

@@ -15,6 +15,7 @@
         <field name="image" type="base64" file="ct_payment_tap/static/description/icon.png"/>
         <field name="code">tap_direct</field>
         <field name="active">True</field>
+        <field name="support_tokenization">True</field>
     </record>
 
     <record id="payment_method_tap_redirect" model="payment.method">
@@ -23,6 +24,7 @@
         <field name="image" type="base64" file="ct_payment_tap/static/description/icon.png"/>
         <field name="code">tap_redirect</field>
         <field name="active">True</field>
+        <field name="support_tokenization">True</field>
     </record>
 
 

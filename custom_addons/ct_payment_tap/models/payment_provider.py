@@ -41,6 +41,15 @@ class PaymentProviderTap(models.Model):
         help="Choose how the customer will complete their payment."
     )
 
+
+    def _compute_feature_support_fields(self):
+        """ Override of `payment` to enable additional features. """
+        super()._compute_feature_support_fields()
+        self.filtered(lambda p: p.code == 'demo').update({
+            'support_tokenization': True,
+        })
+
+
     def _get_tap_api_url(self):
         """Returns the base URL for the Tap API."""
         return 'https://api.tap.company/v2/'

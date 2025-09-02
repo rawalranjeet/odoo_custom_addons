@@ -9,6 +9,7 @@
         <field name="inline_form_view_id" ref="inline_form"/>
         <field name="image_128" type="base64" file="ct_payment_tap/static/description/icon.png"/>
         <field name="module_id" ref="base.module_ct_payment_tap"/>
+         <field name="allow_tokenization">True</field>
         <field name="payment_method_ids"
                eval="[Command.set([
                         ref('ct_payment_tap.payment_method_tap_direct'),

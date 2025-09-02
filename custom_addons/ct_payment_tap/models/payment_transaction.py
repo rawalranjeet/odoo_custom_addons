@@ -39,7 +39,7 @@ class PaymentTransactionTap(models.Model):
         provider_ref = notification_data.get('id') or notification_data.get('tap_id')
         if not provider_ref:
             raise ValidationError("Tap: " + _("Received notification data with missing charge ID."))
-        tx = self.search([('provider_reference', '=', provider_ref), ('provider_code', '=', 'tap')])
+        tx = self.sudo().search([('provider_reference', '=', provider_ref), ('provider_code', '=', 'tap')])
         if not tx:
             raise ValidationError("Tap: " + _("No transaction found matching provider reference %s.", provider_ref))
         return tx
@@ -150,6 +150,79 @@ class PaymentTransactionTap(models.Model):
             self._set_pending()
 
 
+    
+    def _tap_tokenize_from_notification_data(self, notification_data):
+        """ Create a new token based on the notification data.
+
+        Note: self.ensure_one()
+
+        :param dict notification_data: The notification data sent by the provider.
+        :return: None
+        """
+
+        self.ensure_one()
+
+        token = self.env['payment.token'].sudo().create({
+            'provider_id': self.provider_id.id,
+            'payment_method_id': self.payment_method_id.id,
+            'payment_details': notification_data['card']['last_four'],
+            'partner_id': self.partner_id.id,
+            'provider_ref': self.provider_reference,
+            'tap_customer_id': notification_data['customer']['id'],
+            'tap_card_id': notification_data['card']['id'],
+            'tap_payment_agreement_id': notification_data['payment_agreement']['id']
+        })
+        self.write({
+            'token_id': token,
+            'tokenize': False,
+        })
+        _logger.info(
+            "created token with id %(token_id)s for partner with id %(partner_id)s from "
+            "transaction with reference %(ref)s",
+            {
+                'token_id': token.id,
+                'partner_id': self.partner_id.id,
+                'ref': self.reference,
+            },
+        )
+
+    
+
+    def _tap_token_payment(self, notification_data):
+        self.ensure_one()
+
+        return_url = urls.url_join(self.get_base_url(), '/payment/tap/return')
+
+        payload = {
+            'amount': self.amount,
+            'currency': self.currency_id.name,
+            'customer_initiated': False,
+            "payment_agreement": {
+                "id": self.token_id.tap_payment_agreement_id
+            },
+            'save_card': False,
+            'description': self.reference,
+            'reference': {'transaction': self.reference, 'order': self.reference},
+            'customer': {'first_name': self.partner_name, 'email': self.partner_email, 'id':notification_data['card']['customer']},
+            'source': {'id': notification_data['id']},
+            'redirect': {'url':return_url}
+        }
+        response_data = self.provider_id._tap_make_request('charges', payload=payload, method='POST')
+
+        self.provider_reference = response_data.get('id')
+
+        return response_data
+
+
+    def _tap_is_authorization_pending(self):
+        return self.filtered_domain([
+            ('provider_code', '=', 'tap'),
+            ('operation', '=', 'online_token'),
+            ('state', '=', 'pending'),
+            ('tap_3ds_auth_url', 'ilike', 'https'),
+        ])
+    
+
 
     # direct payment
     def _tap_create_charge_from_token(self, token_id):
@@ -174,68 +247,14 @@ class PaymentTransactionTap(models.Model):
         if response_data.get('status') == 'INITIATED' and response_data.get('transaction', {}).get('url'):
             return {'three_ds_redirect_url': response_data['transaction']['url']}
         return {}
-
-    
-    def _tap_tokenize_from_notification_data(self, notification_data):
-        """ Create a new token based on the notification data.
-
-        Note: self.ensure_one()
-
-        :param dict notification_data: The notification data sent by the provider.
-        :return: None
-        """
-
-        self.ensure_one()
-
-        token = self.env['payment.token'].create({
-            'provider_id': self.provider_id.id,
-            'payment_method_id': self.payment_method_id.id,
-            'payment_details': notification_data['card']['last_four'],
-            'partner_id': self.partner_id.id,
-            'provider_ref': self.provider_reference,
-            'tap_customer_id': notification_data['customer']['id'],
-            'tap_card_id': notification_data['card']['id'],
-        })
-        self.write({
-            'token_id': token,
-            'tokenize': False,
-        })
-        _logger.info(
-            "created token with id %(token_id)s for partner with id %(partner_id)s from "
-            "transaction with reference %(ref)s",
-            {
-                'token_id': token.id,
-                'partner_id': self.partner_id.id,
-                'ref': self.reference,
-            },
-        )
-
     
 
-    def _tap_token_payment(self, notification_data):
-        self.ensure_one()
-        payload = {
-            'amount': self.amount,
-            'currency': self.currency_id.name,
-            'customer_initiated': True,
-            'save_card': False,
-            'description': self.reference,
-            'reference': {'transaction': self.reference, 'order': self.reference},
-            'customer': {'first_name': self.partner_name, 'email': self.partner_email, 'id':notification_data['card']['customer']},
-            'source': {'id': notification_data['id']},
-            'redirect': {'url': self.get_base_url() + '/payment/tap/return'}
-        }
-        response_data = self.provider_id._tap_make_request('charges', payload=payload, method='POST')
+    # def action_tap_3ds_verification(self):
+    #     url = self.tap_3ds_auth_url
+    #     if url:
 
-        self.provider_reference = response_data.get('id')
-
-        return response_data
-
-
-    def _tap_is_authorization_pending(self):
-        return self.filtered_domain([
-            ('provider_code', '=', 'tap'),
-            ('operation', '=', 'online_token'),
-            ('state', '=', 'pending'),
-            ('tap_3ds_auth_url', 'ilike', 'https'),
-        ])
+    #         return {
+    #             'type': 'ir.actions.act_url',
+    #             'url': url,
+    #             'target': 'self',
+    #         }

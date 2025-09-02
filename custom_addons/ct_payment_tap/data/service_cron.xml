@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+     <record id="ir_cron_unpaid_invoice_payments" model="ir.cron">
+        <field name="name">Pay Customer Payments : Tap</field>
+        <field name="model_id" ref="model_payment_tap_cron"/>
+        <field name="state">code</field>
+        <field name="code">model.action_customer_payments()</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+
+</odoo>
