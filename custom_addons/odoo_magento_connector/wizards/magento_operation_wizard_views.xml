@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="magento_operation_wizard_view_form" model="ir.ui.view">
+        <field name="name">magento.operation.wizard.view.form</field>
+        <field name="model">magento.operation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="">
+               <group >
+                    <field name="magento_instance_id" />
+                    <field name="operation_type" />
+                    <field name="operation_sub_type" />
+
+                    <!-- export fields -->
+                    <field name = "export_all" invisible = "operation_type =='import'"/>
+
+                    <field name = "product_template_id" 
+                        invisible = "operation_type =='import' or operation_sub_type != 'products' or export_all"
+                        required = "operation_type =='export' and operation_sub_type == 'products' and not export_all"
+                        domain = "[('magento_sku_id', '=', False)]"
+                        options="{'no_create': True}"
+                    />
+                    <field name = "partner_id" 
+                        invisible = "operation_type =='import' or operation_sub_type != 'customers' or export_all"
+                        required = "operation_type =='export' and operation_sub_type == 'customers' and not export_all"
+                        domain = "[('magento_customer_id', '=', False)]"
+                        options="{'no_create': True}"
+                    />
+                    <field name = "order_id" 
+                        invisible = "operation_type =='import' or operation_sub_type != 'orders' or export_all"
+                        required = "operation_type =='export' and operation_sub_type == 'orders' and not export_all"
+                        domain = "[('magento_order_id', '=', False)]"
+                        options="{'no_create': True}"
+                    />
+
+               </group>
+               <footer>
+                    <button string = "Confirm" name="action_confirm" type="object" class="btn btn-primary"/>
+               </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="magento_operation_wizard_action" model="ir.actions.act_window">
+        <field name="name">Magento Operation</field>
+        <field name="res_model">magento.operation.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem
+        id="menu_magento_operation_wizard"
+        name="Magento Operation"
+        action="magento_operation_wizard_action"
+        parent="menu_magento_root"
+        sequence="3"
+        />
+
+</odoo>

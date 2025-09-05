@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+   <record id="menu_events" model="website.menu">
+       <field name="name">Event Management</field>
+       <field name="url">/events</field>
+       <field name="parent_id" ref="website.main_menu"/>
+       <field name="sequence" type="int">20</field>
+       <field name="is_mega_menu">True</field>
+       <field name="mega_menu_content" type="html">
+           <section class="event-section">
+               <div class="container">
+                   <div class="row py-4">
+                       <div class="col-lg-12">
+                           <h3 class="mb-3">Upcoming Events</h3>
+                           <ul class="list-unstyled">
+                               <li>
+                                   <a href="#" class="text-dark d-flex align-items-center text-decoration-none">
+                                       <span class="fa fa-caret-right mr-2"></span>
+                                       <span>Event 1</span>
+                                   </a>
+                               </li>
+                               <li>
+                                   <a href="#" class="text-dark d-flex align-items-center text-decoration-none">
+                                       <span class="fa fa-caret-right mr-2"></span>
+                                       <span>Event 2</span>
+                                   </a>
+                               </li>
+                           </ul>
+                       </div>
+                   </div>
+               </div>
+           </section>
+       </field>
+   </record>
+</odoo>

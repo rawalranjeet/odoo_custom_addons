@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="magento_products_view_action" model="ir.actions.act_window">
+        <field name="name">Magento Products</field>
+        <field name="res_model">product.template</field>
+        <field name="domain">[('magento_sku_id','!=',False)]</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+
+
+    <menuitem
+        id="menu_magento_products"
+        name="Magenti Products"
+        parent="menu_magento_root"
+        sequence="3"
+        />
+
+    <menuitem
+        id="menu_magento_products_list"
+        name="Products"
+        action="magento_products_view_action"
+        parent="menu_magento_products"
+        sequence="1"
+        />
+
+
+    
+
+</odoo>

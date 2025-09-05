@@ -7,7 +7,9 @@ services:
       POSTGRES_PASSWORD: odoo
     volumes:
       - postgres:/var/lib/postgresql/data
-    restart: unless-stopped  
+    restart: unless-stopped
+    networks:
+      - m2_default
 
   odoo:
     image: odoo:18.0
@@ -24,15 +26,20 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
     command:
-      ["odoo", "-c", "/etc/odoo/odoo.conf", "-u","ct_payment_tap" ,"--dev=xml"] 
+      ["odoo", "-c", "/etc/odoo/odoo.conf","-d", "new_db" ,"-u","odoo_magento_connector" ,"--dev=xml"] 
     volumes:
       - odoo:/var/lib/odoo
       - ./en_18:/mnt/extra-addons_ent
       - ./custom_addons:/mnt/extra-addons
       - ./odoo.conf:/etc/odoo/odoo.conf
-    restart: unless-stopped  
+    restart: unless-stopped
+    networks:
+      - m2_default
 
 volumes:
   postgres:
   odoo:
 
+networks:
+  m2_default:
+    external: true

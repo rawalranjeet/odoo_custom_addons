@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_magento_instance,magento_instance,model_magento_instance,,1,1,1,1
+access_magento_opeartion_wizard,magento_operation_wizard,model_magento_operation_wizard,,1,1,1,1

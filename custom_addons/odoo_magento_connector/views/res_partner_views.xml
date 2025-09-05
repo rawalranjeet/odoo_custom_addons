@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="magento_customers_view_action" model="ir.actions.act_window">
+        <field name="name">Magento Customers</field>
+        <field name="res_model">res.partner</field>
+        <field name="domain">[('magento_customer_id','!=',False)]</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+
+    <record id="res_partner_view_form_inherit" model="ir.ui.view">
+        <field name="name">res.partner.view.form.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="gender" string="Gender"/>
+                <field name="dob" string="Date of Birth"/>
+                <field name="magento_customer_id"/>
+            </xpath>
+        </field>
+    </record>
+
+
+    <menuitem
+        id="menu_magento_customers"
+        name="Magento Customers"
+        parent="menu_magento_root"
+        sequence="4"
+        />
+
+    <menuitem
+        id="menu_magento_customers_list"
+        name="Customers"
+        action="magento_customers_view_action"
+        parent="menu_magento_customers"
+        sequence="1"
+        />
+
+    
+
+</odoo>
