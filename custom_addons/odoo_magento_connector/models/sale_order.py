@@ -7,4 +7,9 @@ class SaleOrder(models.Model):
     magento_instance_id = fields.Many2one("magento.instance")
 
 
+class SaleOrderLine(models.Model):
+    _inherit = "sale.order.line"
+
+    magento_order_id = fields.Char()
+    magento_instance_id = fields.Many2one("magento.instance")
 

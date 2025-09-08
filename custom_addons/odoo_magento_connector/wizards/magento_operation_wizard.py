@@ -61,8 +61,10 @@ class MagentoOperationWizard(models.TransientModel):
         try:
             if method == 'GET':
                 response = requests.get(url, params= params,json = payload, verify=False, headers=headers, timeout=10)
-            else: # POST
+            elif method == 'POST': # POST
                 response = requests.post(url, params= params, json = payload, verify=False, headers=headers, timeout=20)
+            elif method == 'PUT':
+                response = requests.put(url, params= params, json = payload, verify=False, headers=headers, timeout=20)
         
             response.raise_for_status()
 
@@ -92,7 +94,7 @@ class MagentoOperationWizard(models.TransientModel):
         magento_items = response.get('items')
         new_product_added = 0
 
-        for item in magento_items[:20]:
+        for item in magento_items:
             product_template = self.env['product.template'].search([('magento_sku_id', '=', item.get('sku')), ('magento_instance_id','=', self.magento_instance_id.id)])
 
             if not product_template:
@@ -143,18 +145,48 @@ class MagentoOperationWizard(models.TransientModel):
                     'magento_instance_id': self.magento_instance_id.id,
                 })
 
-            import pdb; pdb.set_trace()
+            
             
             items = order.get('items')
 
             for item in items:
+                # import pdb; pdb.set_trace()
 
                 product_template = self.env['product.template'].search([('magento_sku_id', '=', item.get('sku')), ('magento_instance_id','=', self.magento_instance_id.id)])
+                product_product = self.env['product.product']
 
                 if product_template:
-                    product_product = self.env['product.product'].search([('product_tmpl_id','=', product_template.id)])
+                    product_product = product_product.search([('product_tmpl_id','=', product_template.id)])
+                
 
-                    
+                if product_product:
+
+                    # check if the sale_order_line already exists
+                    sale_order_line = self.env['sale.order.line'].search([('magento_order_id', '=', item.get('order_id')), ('magento_instance_id','=', self.magento_instance_id.id), ('order_id','=',sale_order.id),('product_id','=',product_product.id)])
+
+
+                    if not sale_order_line:
+                        account_tax = self.env['account.tax'].search([('amount','=',item.get('tax_percent'))])
+                        if not account_tax:
+                            account_tax = account_tax.create({
+                                'name': f"{item.get('tax_percent')}%",
+                                'amount': item.get('tax_percent'),
+                            })
+
+                        sale_order_line = self.env['sale.order.line'].create({
+                            'magento_order_id':  item.get('order_id'),
+                            'magento_instance_id': self.magento_instance_id.id,
+                            'name': f'magento_item_line {item.get('order_id')}',
+                            'product_id':product_product.id,
+                            'order_id': sale_order.id,
+                            'product_uom_qty': item.get('qty_ordered'),
+                            'price_unit': item.get('base_price'),
+                            'tax_id': False,
+                        }) 
+
+                        sale_order_line.write({
+                            'tax_id': [(4, account_tax.id)]
+                        })
 
         
         return {
@@ -307,7 +339,223 @@ class MagentoOperationWizard(models.TransientModel):
         
 
     def export_orders_to_magento(self):
-        pass
+        
+        if self.export_all:
+            orders = self.env['sale.order'].search([('magento_order_id','=',False), ('magento_instance_id','!=', self.magento_instance_id.id)])
+
+            if orders:
+                total_order_exported = 0
+                for order in orders:
+                    order_line = order.order_line
+                    if not order_line:
+                        continue;
+
+
+                    # Create a cart
+                    params = ''
+                    cart_response = self.magento_make_request('/guest-carts', params,None , 'POST')
+                    magento_cart_id = cart_response
+
+                    # Add items to cart
+                    total_product_added = 0
+                    for item in order_line:
+                        if not item.product_template_id.magento_sku_id:
+                            continue;
+                        total_product_added+=1
+                        item_payload = {
+                            "cartItem": {
+                                "sku": item.product_template_id.magento_sku_id,
+                                "qty": item.product_uom_qty,
+                                "quote_id": magento_cart_id,
+                            }
+                        }
+
+                        self.magento_make_request(f'/guest-carts/{magento_cart_id}/items', params, item_payload, 'POST')
+
+                    if total_product_added == 0:
+                        continue;
+                    
+                    # shipping details\
+                    partner = order.partner_id
+
+                    full_name = partner.name
+
+                    parts = full_name.strip().split()
+
+                    first_name = parts[0] if len(parts) > 0 else ""
+                    middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
+                    last_name = parts[-1] if len(parts) > 1 else ""
+
+                    if not first_name or not last_name:
+                        raise UserError("customer name is incomplete")
+                
+
+                    shipping_payload = {
+                        "addressInformation": {
+                            "shipping_address": {
+                                "firstname": first_name,
+                                "middlename": middle_name,
+                                "lastname": last_name,
+                                "street": [partner.street, partner.street2],
+                                "city": partner.city,
+                                "region": partner.state_id.code,
+                                "postcode": partner.zip,
+                                "country_id": partner.country_code,
+                                "telephone": partner.phone,
+                                "email": partner.email,
+                            },
+                            "billing_address": {
+                                "firstname": first_name,
+                                "middlename": middle_name,
+                                "lastname": last_name,
+                                "street": [partner.street, partner.street2],
+                                "city": partner.city,
+                                "region": partner.state_id.code,
+                                "postcode": partner.zip,
+                                "country_id": partner.country_code,
+                                "telephone": partner.phone,
+                                "email": partner.email,
+                            },
+                            "shipping_method_code": "flatrate",
+                            "shipping_carrier_code": "flatrate"
+                        }
+                    }
+
+                    response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/shipping-information', params, shipping_payload, 'POST')
+
+                    # payment methods
+                    payment_payload = {
+                        "method": {
+                            "method": "checkmo"   # Payment method code
+                        }
+                    }
+
+                    response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/selected-payment-method', params, payment_payload, 'PUT')
+                    
+
+                    # create an order
+                    magento_order_id = self.magento_make_request(f'/guest-carts/{magento_cart_id}/order', params, None, 'PUT')
+
+                    order.write({
+                        'magento_order_id': magento_order_id,
+                        'magento_instance_id': self.magento_instance_id,
+                    })
+
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': _(f'Orders Export Success'),
+                        'message': _(f'Total : {total_order_exported}'),
+                        'type': 'success',
+                        'sticky': False,
+                    },
+                }
+                    
+
+            else:
+
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': _('Order Export Failed'),
+                        'message': "No order found to export",
+                        'type': 'danger',
+                        'sticky': False,
+                    },
+                }
+
+            
+        else:
+            order_line = self.order_id.order_line
+            if not order_line:
+                raise UserError("Selected Order has no products added")
+
+
+            # Create a cart
+            params = ''
+            cart_response = self.magento_make_request('/guest-carts', params,None , 'POST')
+            magento_cart_id = cart_response
+
+            # Add items to cart
+            for item in order_line:
+                item_payload = {
+                    "cartItem": {
+                        "sku": item.product_template_id.magento_sku_id,
+                        "qty": item.product_uom_qty,
+                        "quote_id": magento_cart_id,
+                    }
+                }
+
+                self.magento_make_request(f'/guest-carts/{magento_cart_id}/items', params, item_payload, 'POST')
+
+            # shipping details\
+            partner = self.order_id.partner_id
+
+            full_name = partner.name
+
+            parts = full_name.strip().split()
+
+            first_name = parts[0] if len(parts) > 0 else ""
+            middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
+            last_name = parts[-1] if len(parts) > 1 else ""
+
+            if not first_name or not last_name:
+                raise UserError("customer name is incomplete")
+        
+
+            shipping_payload = {
+                "addressInformation": {
+                    "shipping_address": {
+                        "firstname": first_name,
+                        "middlename": middle_name,
+                        "lastname": last_name,
+                        "street": [partner.street, partner.street2],
+                        "city": partner.city,
+                        "region": partner.state_id.code,
+                        "postcode": partner.zip,
+                        "country_id": partner.country_code,
+                        "telephone": partner.phone,
+                        "email": partner.email,
+                    },
+                    "billing_address": {
+                        "firstname": first_name,
+                        "middlename": middle_name,
+                        "lastname": last_name,
+                        "street": [partner.street, partner.street2],
+                        "city": partner.city,
+                        "region": partner.state_id.code,
+                        "postcode": partner.zip,
+                        "country_id": partner.country_code,
+                        "telephone": partner.phone,
+                        "email": partner.email,
+                    },
+                    "shipping_method_code": "flatrate",
+                    "shipping_carrier_code": "flatrate"
+                }
+            }
+
+            response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/shipping-information', params, shipping_payload, 'POST')
+
+            # payment methods
+            payment_payload = {
+                "method": {
+                    "method": "checkmo"   # Payment method code
+                }
+            }
+
+            response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/selected-payment-method', params, payment_payload, 'PUT')
+            
+
+            # create an order
+            magento_order_id = self.magento_make_request(f'/guest-carts/{magento_cart_id}/order', params, None, 'PUT')
+
+            self.order_id.write({
+                'magento_order_id': magento_order_id,
+                'magento_instance_id': self.magento_instance_id,
+            })
+
 
 
     def export_customers_to_magento(self):
