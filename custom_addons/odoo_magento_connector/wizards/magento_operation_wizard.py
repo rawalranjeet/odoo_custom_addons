@@ -10,7 +10,7 @@ _logger = logging.getLogger("__name__")
 class MagentoOperationWizard(models.TransientModel):
     _name = "magento.operation.wizard"
     _description = "Magento Operation Wizard"
-
+    
     magento_instance_id = fields.Many2one("magento.instance", required=True)
     operation_type = fields.Selection([('import','Import'),('export','Export')], default = 'import', required=True)
     operation_sub_type = fields.Selection([
@@ -52,7 +52,7 @@ class MagentoOperationWizard(models.TransientModel):
                 return self.export_customers_to_magento()
 
 
-    def magento_make_request(self,endpoint, params, payload=None, method='GET'):
+    def magento_make_request(self, endpoint, params, payload=None, method='GET'):
         
         url = f'{self.magento_instance_id.magento_store_base_url}/rest/V1{endpoint}'
 
@@ -85,29 +85,43 @@ class MagentoOperationWizard(models.TransientModel):
     # IMPORT <-------------
     def import_product_from_magento(self):
 
+        # search for only the simple prodcuts
         params = {
-                "searchCriteria":"name"
+                "searchCriteria[filter_groups][0][filters][0][field]":"type_id",
+                "searchCriteria[filter_groups][0][filters][0][value]": "simple",
+                "searchCriteria[filter_groups][0][filters][0][condition_type]": "eq"
             }
         
         response = self.magento_make_request('/products', params)
+        
         
         magento_items = response.get('items')
         new_product_added = 0
 
         for item in magento_items:
-            product_template = self.env['product.template'].search([('magento_sku_id', '=', item.get('sku')), ('magento_instance_id','=', self.magento_instance_id.id)])
+            product_template = self.env['product.template'].search([
+                '|',
+                    ('default_code', '=', item.get('sku')),
+                    ('magento_sku_id', '=', item.get('sku')),
+                ('magento_instance_id','=', self.magento_instance_id.id)
+                ])
 
             if not product_template:
                 new_product_added += 1
                 product_template = product_template.create({
-                    'magento_instance_id': self.magento_instance_id.id,
-                    'magento_sku_id': item.get('sku'),
                     'name': item.get('name'),
                     'list_price': item.get('price'),
                     'is_storable': True,
                     'type': 'consu',
                     'default_code': item.get('sku'),
                 })
+
+            product_template.write({
+                'magento_instance_id': self.magento_instance_id.id,
+                'magento_sku_id': item.get('sku'),
+            })
+
+            
         
         return {
             'type': 'ir.actions.client',
@@ -132,7 +146,9 @@ class MagentoOperationWizard(models.TransientModel):
 
         for order in magento_orders:
             sale_order = self.env['sale.order'].search([('magento_order_id', '=', order.get('entity_id')), ('magento_instance_id','=', self.magento_instance_id.id)])
-            partner = self.env['res.partner'].search([('magento_customer_id', '=', order.get('customer_id')), ('magento_instance_id','=', self.magento_instance_id.id)])
+            partner = self.env['res.partner'].search([('email', '=', order.get('customer_email')), ('magento_instance_id','=', self.magento_instance_id.id)])
+            
+            # import pdb; pdb.set_trace()
 
             if not partner:
                 continue; 
@@ -211,19 +227,81 @@ class MagentoOperationWizard(models.TransientModel):
         magento_customers = response.get('items')
         new_customer_added = 0
 
-        for customer in magento_customers:
-            res_partner = self.env['res.partner'].search([('magento_customer_id', '=', customer.get('id')), ('magento_instance_id','=', self.magento_instance_id.id)])
 
-            if not res_partner:
-                new_customer_added += 1
-                res_partner = res_partner.create({
-                    'magento_instance_id': self.magento_instance_id.id,
-                    'magento_customer_id': customer.get('id'),
-                    'name': f"{customer.get('firstname')} {customer.get('middlename')} {customer.get('lastname')}",
-                    'dob': customer.get('dob'),
-                    'email': customer.get('email'),
-                    'gender': 'male' if customer.get('gender') == 1 else 'female' if customer.get('gender') == 2 else 'other',
+        for customer in magento_customers:
+            res_partner = self.env['res.partner'].search([
+                '|',
+                    ('email', '=', customer.get('email')),
+                    ('magento_customer_id', '=', customer.get('id')),
+                ], limit=1)
+            
+            vals  = {}
+
+            vals.update({
+                'magento_instance_id': self.magento_instance_id.id,
+                'magento_customer_id': customer.get('id'),
+                'dob': customer.get('dob'),
+                'gender': 'male' if customer.get('gender') == 1 else 'female' if customer.get('gender') == 2 else 'other',
+            })
+
+
+            # res_partner.write({
+            #     'magento_instance_id': self.magento_instance_id.id,
+            #     'magento_customer_id': customer.get('id'),
+            #     'dob': customer.get('dob'),
+            #     'gender': 'male' if customer.get('gender') == 1 else 'female' if customer.get('gender') == 2 else 'other',
+                
+            # })
+
+            addresses = customer.get('addresses')
+            
+            if addresses:
+                country = self.env['res.country'].search([('code', '=', addresses[0].get('country_id'))])
+                if addresses[0].get('region').get('region') != None and country:
+                    if addresses[0].get('region_id') == 0:
+                        state = self.env['res.country.state'].search([('name','=', addresses[0].get('region').get('region')), ('country_id','=',country.id)])
+                    else:
+                        state = self.env['res.country.state'].search([('code','=', addresses[0].get('region').get('region_code')), ('country_id','=',country.id)])
+                else:
+                    state = False
+
+                vals.update({
+                    'street': addresses[0].get('street')[0],
+                    'street2': addresses[0].get('street')[1] if len(addresses[0].get('street'))>1 else '',
+                    'city': addresses[0].get('city'),
+                    'zip': addresses[0].get('postcode'),
+                    'state_id': state.id if state else False,
+                    'country_id': country.id if country else False,
+                    'phone': addresses[0].get('telephone'),
                 })
+
+                # res_partner.write({
+                #     'street': addresses[0].get('street')[0],
+                #     'street2': addresses[0].get('street')[1] if len(addresses[0].get('street'))>1 else '',
+                #     'city': addresses[0].get('city'),
+                #     'zip': addresses[0].get('postcode'),
+                #     'state_id': state.id if state else False,
+                #     'country_id': country.id if country else False,
+                #     'phone': addresses[0].get('telephone'),
+                # })
+
+                if not res_partner:
+                    new_customer_added += 1
+
+                    vals.update({
+                        'name': f"{customer.get('firstname')} {customer.get('middlename')} {customer.get('lastname')}",
+                        'email': customer.get('email'),
+                    })
+
+                    res_partner.create(vals)
+
+                    # res_partner = res_partner.create({
+                    #     'name': f"{customer.get('firstname')} {customer.get('middlename')} {customer.get('lastname')}",
+                    #     'email': customer.get('email'),
+                    # })
+                else:
+                    res_partner.write(vals)
+            
         
         return {
             'type': 'ir.actions.client',
@@ -241,15 +319,21 @@ class MagentoOperationWizard(models.TransientModel):
     def export_product_to_magento(self):
         
         if self.export_all:
-            product_templates = self.env['product.template'].search([('magento_sku_id','=',False)])
+            product_templates = self.env['product.template'].search([
+                ('magento_sku_id','=',False),
+                ('default_code', '!=', False),
+                ])
+            
+            
 
             if product_templates:
                 params = ''
                 total_product_exported = 0
 
                 for product_template in product_templates:
-                    if not product_template.default_code or not product_template.is_storable:
-                        continue; 
+                    
+                    url_key = f"{"-".join(product_template.name.lower().split()).replace("'", "")}-{product_template.id}"
+
                     
                     total_product_exported += 1
                     payload = {
@@ -262,7 +346,8 @@ class MagentoOperationWizard(models.TransientModel):
                             "attribute_set_id": 4,
                             "weight": 1,
                             "custom_attributes": [
-                                { "attribute_code": "description", "value": product_template.description }
+                                { "attribute_code": "description", "value": product_template.description },
+                                { "attribute_code": "url_key", "value": url_key },
                             ]
                         }
                     }
@@ -299,11 +384,13 @@ class MagentoOperationWizard(models.TransientModel):
                 }
 
         else:
-            if not self.product_template_id.default_code or not self.product_template_id.is_storable:
-                raise UserError("Selected Product has no Reference or is not storable")
+            if not self.product_template_id.default_code:
+                raise UserError("Selected Product has no Reference")
 
 
             params = ''
+
+            url_key = f"{"-".join(product_template.name.lower().split()).replace("'", "")}-{product_template.id}"
 
             payload = {
                 "product": {
@@ -315,7 +402,8 @@ class MagentoOperationWizard(models.TransientModel):
                     "attribute_set_id": 4,
                     "weight": 1,
                     "custom_attributes": [
-                        { "attribute_code": "description", "value": self.product_template_id.description }
+                        { "attribute_code": "description", "value": self.product_template_id.description },
+                        { "attribute_code": "url_key", "value": url_key },
                     ]
                 }
             }
@@ -350,11 +438,28 @@ class MagentoOperationWizard(models.TransientModel):
                     if not order_line:
                         continue;
 
+                    partner = order.partner_id
+
+                    full_name = partner.name
+
+                    parts = full_name.strip().split()
+
+                    first_name = parts[0] if len(parts) > 0 else ""
+                    middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
+                    last_name = parts[-1] if len(parts) > 1 else ""
+
+                    if not first_name or not last_name:
+                        continue;
+                    
+                    if not partner.phone or not partner.street or not partner.city or not partner.state_id or not partner.zip or not partner.country_code:
+                        continue;
+                        
 
                     # Create a cart
                     params = ''
                     cart_response = self.magento_make_request('/guest-carts', params,None , 'POST')
                     magento_cart_id = cart_response
+                    
 
                     # Add items to cart
                     total_product_added = 0
@@ -375,21 +480,7 @@ class MagentoOperationWizard(models.TransientModel):
                     if total_product_added == 0:
                         continue;
                     
-                    # shipping details\
-                    partner = order.partner_id
-
-                    full_name = partner.name
-
-                    parts = full_name.strip().split()
-
-                    first_name = parts[0] if len(parts) > 0 else ""
-                    middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
-                    last_name = parts[-1] if len(parts) > 1 else ""
-
-                    if not first_name or not last_name:
-                        raise UserError("customer name is incomplete")
-                
-
+                    # shipping details
                     shipping_payload = {
                         "addressInformation": {
                             "shipping_address": {
@@ -420,6 +511,8 @@ class MagentoOperationWizard(models.TransientModel):
                             "shipping_carrier_code": "flatrate"
                         }
                     }
+
+                   
 
                     response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/shipping-information', params, shipping_payload, 'POST')
 
@@ -557,25 +650,38 @@ class MagentoOperationWizard(models.TransientModel):
             })
 
 
-
     def export_customers_to_magento(self):
 
         if self.export_all:
-            res_partners = self.env['product.template'].search([('magento_customer_id','=',False)])
+            res_partners = self.env['res.partner'].search([
+                ('magento_customer_id','=',False), 
+                ('email', '!=', False),
+                ('dob', '!=', False),
+                ('gender', '!=', False),
+                ])
+            
+            
 
             if res_partners:
                 params = ''
                 total_customer_exported = 0
 
                 for partner in res_partners: 
-
-                    if not partner.dob or partner.gender:
+                    # search for customer in magento using email
+                    params = {
+                        "searchCriteria[filter_groups][0][filters][0][field]":"email",
+                        "searchCriteria[filter_groups][0][filters][0][value]": partner.email,
+                        "searchCriteria[filter_groups][0][filters][0][condition_type]": "eq"
+                    }
+                    customer = self.magento_make_request('/customers/search', params)
+                    
+                    if customer.get('items'):
                         continue;
                     
+
                     total_customer_exported += 1
 
                     full_name = partner.name
-
                     parts = full_name.strip().split()
 
                     first_name = parts[0] if len(parts) > 0 else ""
@@ -585,6 +691,32 @@ class MagentoOperationWizard(models.TransientModel):
                     if not first_name or not last_name:
                         continue;
 
+                    if partner.street and partner.country_id and partner.city and partner.zip and partner.phone:
+                        
+                        if partner.state_id:
+                            region = {
+                                "region_code": partner.state_id.code,
+                                "region": partner.state_id.name,
+                            }
+                        else:
+                            region = {}
+
+                        address = {
+                                "firstname": first_name,
+                                "middlename": middle_name,
+                                "lastname": last_name,
+                                "street": [partner.street, partner.street2],
+                                "city": partner.city,
+                                "postcode": partner.zip,
+                                "telephone": partner.phone,
+                                "country_id": partner.country_id.code,
+                                "region": region,
+                            }
+                        
+                    else:
+                        address = {}
+
+
                     payload = {
                         "customer": {
                             "email": partner.email,
@@ -592,9 +724,12 @@ class MagentoOperationWizard(models.TransientModel):
                             "middlename": middle_name,
                             "lastname": last_name,
                             "gender": 1 if partner.gender == 'male' else 2 if partner.gender == 'female' else 3,
-                            "dob" : partner.dob.strftime("%Y-%m-%d")
+                            "dob" : partner.dob.strftime("%Y-%m-%d"),
+                            "addresses": [address],
                         }
                     }
+
+                    
 
                     response = self.magento_make_request('/customers', params, payload, 'POST')
                     
@@ -634,6 +769,7 @@ class MagentoOperationWizard(models.TransientModel):
             if not self.partner_id.dob or not self.partner_id.gender:
                 raise UserError("Selected Customer has no Dob or Gender defined")
 
+
             full_name = self.partner_id.name
 
             parts = full_name.strip().split()
@@ -641,6 +777,30 @@ class MagentoOperationWizard(models.TransientModel):
             first_name = parts[0] if len(parts) > 0 else ""
             middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
             last_name = parts[-1] if len(parts) > 1 else ""
+
+            if self.partner_id.street and self.partner_id.country_id and self.partner_id.city and self.partner_id.zip and self.partner_id.phone:
+                        
+                if partner.state_id:
+                    region = {
+                        "region_code": partner.state_id.code,
+                    }
+                else:
+                    region = {}
+
+                address = {
+                        "firstname": first_name,
+                        "middlename": middle_name,
+                        "lastname": last_name,
+                        "street": [partner.street, partner.street2],
+                        "city": partner.city,
+                        "postcode": partner.zip,
+                        "telephone": partner.phone,
+                        "country_id": partner.country_id.code,
+                        "region": region,
+                    }
+                
+            else:
+                address = {}
 
             payload = {
                 "customer": {

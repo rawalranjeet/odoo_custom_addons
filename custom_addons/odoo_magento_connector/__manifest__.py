@@ -24,7 +24,6 @@ customers, sales orders, and inventory levels.
         'views/res_partner_views.xml',
         'views/sale_order_views.xml',
         'wizards/magento_operation_wizard_views.xml',
-        'views/website_menu.xml',
     ],
     
     'installable': True,
