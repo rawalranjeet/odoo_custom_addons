@@ -3,8 +3,9 @@ from odoo.http import request
 import json
 
 class TestController(http.Controller):
-    @http.route('/shopify/webhook/products', type='json', auth='public', methods=['POST'], csrf=False)
+    @http.route('/shopify/webhook/products', type='json', auth='none', methods=['POST'], csrf=False)
     def shopify_webhook_products(self):
+        import pdb; pdb.set_trace()
         return
 
         data = json.loads(request.httprequest.data)

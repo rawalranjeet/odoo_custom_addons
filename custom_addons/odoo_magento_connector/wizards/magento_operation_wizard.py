@@ -61,24 +61,30 @@ class MagentoOperationWizard(models.TransientModel):
         try:
             if method == 'GET':
                 response = requests.get(url, params= params,json = payload, verify=False, headers=headers, timeout=10)
-            elif method == 'POST': # POST
+            elif method == 'POST': 
                 response = requests.post(url, params= params, json = payload, verify=False, headers=headers, timeout=20)
             elif method == 'PUT':
                 response = requests.put(url, params= params, json = payload, verify=False, headers=headers, timeout=20)
         
             response.raise_for_status()
 
+            return response.json()
+
         except requests.exceptions.HTTPError as e:
             _logger.exception(e.response.json())
             raise UserError(f"Magento API Error: {e.response.json().get('message')}")
+        
+        except requests.exceptions.RequestException as e:
+        # Any network/connection/timeout/DNS errors
+            _logger.exception(e)
+            raise UserError(f"Magento Connection Error: It may be due to store url you provided is either invalid or the server is down")
 
         except Exception as e:
-            _logger.exception(e.response.json())
-            raise UserError(f"Magento API Error: {(e.response.json().get('message', 'Unknown Magento API error')).replace('%1', e.response.json().get('parameters', [''])[0])}")
-            # raise UserError(f"An error occurred: {e}")
+            _logger.exception(e)
+            # raise UserError(f"Magento API Error: {(e.response.json().get('message', 'Unknown Magento API error')).replace('%1', e.response.json().get('parameters', [''])[0])}")
+            raise UserError(f"An error occurred: {e}")
         
         
-        return response.json()
     
 
 
@@ -105,6 +111,7 @@ class MagentoOperationWizard(models.TransientModel):
                     ('magento_sku_id', '=', item.get('sku')),
                 ('magento_instance_id','=', self.magento_instance_id.id)
                 ])
+            
 
             if not product_template:
                 new_product_added += 1
@@ -114,12 +121,15 @@ class MagentoOperationWizard(models.TransientModel):
                     'is_storable': True,
                     'type': 'consu',
                     'default_code': item.get('sku'),
+                    'magento_instance_id': self.magento_instance_id.id,
+                    'magento_sku_id': item.get('sku'),
                 })
+            else:
 
-            product_template.write({
-                'magento_instance_id': self.magento_instance_id.id,
-                'magento_sku_id': item.get('sku'),
-            })
+                product_template.write({
+                    'magento_instance_id': self.magento_instance_id.id,
+                    'magento_sku_id': item.get('sku'),
+                })
 
             
         
@@ -182,7 +192,7 @@ class MagentoOperationWizard(models.TransientModel):
 
 
                     if not sale_order_line:
-                        account_tax = self.env['account.tax'].search([('amount','=',item.get('tax_percent'))])
+                        account_tax = self.env['account.tax'].search([('amount','=',item.get('tax_percent'))], limit=1)
                         if not account_tax:
                             account_tax = account_tax.create({
                                 'name': f"{item.get('tax_percent')}%",
@@ -235,14 +245,12 @@ class MagentoOperationWizard(models.TransientModel):
                     ('magento_customer_id', '=', customer.get('id')),
                 ], limit=1)
             
-            vals  = {}
-
-            vals.update({
+            vals  = {
                 'magento_instance_id': self.magento_instance_id.id,
                 'magento_customer_id': customer.get('id'),
                 'dob': customer.get('dob'),
                 'gender': 'male' if customer.get('gender') == 1 else 'female' if customer.get('gender') == 2 else 'other',
-            })
+            }
 
 
             # res_partner.write({
@@ -288,8 +296,14 @@ class MagentoOperationWizard(models.TransientModel):
                 if not res_partner:
                     new_customer_added += 1
 
+                    full_name = customer.get('firstname') + " "
+                    if customer.get('middlename'):
+                        full_name += (customer.get('middlename') + " ")
+
+                    full_name += customer.get('lastname')
+
                     vals.update({
-                        'name': f"{customer.get('firstname')} {customer.get('middlename')} {customer.get('lastname')}",
+                        'name': full_name,
                         'email': customer.get('email'),
                     })
 
@@ -390,7 +404,7 @@ class MagentoOperationWizard(models.TransientModel):
 
             params = ''
 
-            url_key = f"{"-".join(product_template.name.lower().split()).replace("'", "")}-{product_template.id}"
+            url_key = f"{"-".join(self.product_template_id.name.lower().split()).replace("'", "")}-{self.product_template_id.id}"
 
             payload = {
                 "product": {
@@ -809,7 +823,8 @@ class MagentoOperationWizard(models.TransientModel):
                     "middlename": middle_name,
                     "lastname": last_name,
                     "gender": 1 if self.partner_id.gender == 'male' else 2 if self.partner_id.gender == 'female' else 3,
-                    "dob" : self.partner_id.dob.strftime("%Y-%m-%d")
+                    "dob" : self.partner_id.dob.strftime("%Y-%m-%d"),
+                    "addresses": [address],
                 }
             }
 

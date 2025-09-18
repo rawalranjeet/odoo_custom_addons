@@ -32,9 +32,9 @@ class TestMagentoInstance(TransactionCase):
     def test_action_generate_access_token_success(self, mock_post):
 
         mock_post.return_value.status_code = 200
-        mock_post.return_value.text = "token123"
+        mock_post.return_value.json.return_value = "token123"
 
-        import pdb; pdb.set_trace()
+        
         result = self.instance.action_generate_access_token()
         
         self.assertEqual(self.instance.magento_access_token, 'token123', 'Access token not matching')
@@ -73,3 +73,4 @@ class TestMagentoInstance(TransactionCase):
     def tearDownClass(cls):
     # Define this for cleanup operations, such as releasing resources
         super(TestMagentoInstance, cls).tearDownClass()
+        cls.instance.unlink()
