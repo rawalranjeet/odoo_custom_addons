@@ -129,6 +129,7 @@ class MagentoOperationWizard(models.TransientModel):
                 product_template.write({
                     'magento_instance_id': self.magento_instance_id.id,
                     'magento_sku_id': item.get('sku'),
+                    'from_import_operation': True,
                 })
 
             
@@ -250,6 +251,7 @@ class MagentoOperationWizard(models.TransientModel):
                 'magento_customer_id': customer.get('id'),
                 'dob': customer.get('dob'),
                 'gender': 'male' if customer.get('gender') == 1 else 'female' if customer.get('gender') == 2 else 'other',
+                'sync_to_magento' : True,
             }
 
 
@@ -264,6 +266,7 @@ class MagentoOperationWizard(models.TransientModel):
             addresses = customer.get('addresses')
             
             if addresses:
+
                 country = self.env['res.country'].search([('code', '=', addresses[0].get('country_id'))])
                 if addresses[0].get('region').get('region') != None and country:
                     if addresses[0].get('region_id') == 0:
@@ -282,7 +285,7 @@ class MagentoOperationWizard(models.TransientModel):
                     'country_id': country.id if country else False,
                     'phone': addresses[0].get('telephone'),
                 })
-
+            
                 # res_partner.write({
                 #     'street': addresses[0].get('street')[0],
                 #     'street2': addresses[0].get('street')[1] if len(addresses[0].get('street'))>1 else '',
@@ -293,28 +296,86 @@ class MagentoOperationWizard(models.TransientModel):
                 #     'phone': addresses[0].get('telephone'),
                 # })
 
-                if not res_partner:
-                    new_customer_added += 1
+            full_name = customer.get('firstname') + " "
 
-                    full_name = customer.get('firstname') + " "
-                    if customer.get('middlename'):
-                        full_name += (customer.get('middlename') + " ")
+            if customer.get('middlename'):
+                full_name += (customer.get('middlename') + " ")
 
-                    full_name += customer.get('lastname')
+            full_name += customer.get('lastname')
 
-                    vals.update({
-                        'name': full_name,
-                        'email': customer.get('email'),
-                    })
+            vals.update({
+                'name': full_name,
+                'email': customer.get('email'),
+            })
 
-                    res_partner.create(vals)
+            if not res_partner:
+                new_customer_added += 1
 
-                    # res_partner = res_partner.create({
-                    #     'name': f"{customer.get('firstname')} {customer.get('middlename')} {customer.get('lastname')}",
-                    #     'email': customer.get('email'),
-                    # })
+                vals.update({
+                    'from_import_operation': True,
+                })
+
+                res_partner.create(vals)
+
+                # res_partner = res_partner.create({
+                #     'name': f"{customer.get('firstname')} {customer.get('middlename')} {customer.get('lastname')}",
+                #     'email': customer.get('email'),
+                # })
+            else:
+                vals.update({
+                    'from_import_operation': True,
+                })
+                res_partner.write(vals)
+
+
+            # adding addresses to the partner
+            for address in addresses:
+                
+                child_partner = self.env['res.partner'].search([('parent_id','=', res_partner.id),('magento_address_id','=',address.get('id'))])
+
+                country = self.env['res.country'].search([('code', '=', address.get('country_id'))])
+
+                if address.get('region').get('region') != None and country:
+                    if address.get('region_id') == 0:
+                        state = self.env['res.country.state'].search([('name','=', address.get('region').get('region')), ('country_id','=',country.id)])
+                    else:
+                        state = self.env['res.country.state'].search([('code','=', address.get('region').get('region_code')), ('country_id','=',country.id)])
                 else:
-                    res_partner.write(vals)
+                    state = False
+
+                full_name = address.get('firstname') + " "
+
+                if address.get('middlename'):
+                    full_name += (address.get('middlename') + " ")
+
+                full_name += address.get('lastname')
+                
+
+                child_vals =  {
+                    "name" : full_name,
+                    'magento_address_id': address.get('id'),
+                    "magento_instance_id": self.magento_instance_id.id,
+                    'phone': address.get('telephone'),
+                    'parent_id': res_partner.id,
+                    'street': address.get('street')[0],
+                    'street2': address.get('street')[1] if len(address.get('street'))>1 else '',
+                    'zip': address.get('postcode'),
+                    'country_id': country.id if country else False,
+                    'city': address.get('city'),
+                    'state_id': state.id if state else False,
+                    'sync_to_magento': True,
+                    'type': 'other'
+                }
+
+                if not child_partner:
+                    child_partner.create(child_vals)
+                else:
+                    # prevent from making unwanted request to magento
+                    child_vals.update({
+                        'from_import_operation': True,
+                    })
+                    child_partner.write(child_vals)
+                
             
         
         return {
