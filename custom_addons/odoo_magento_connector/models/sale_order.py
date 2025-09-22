@@ -5,6 +5,9 @@ class SaleOrder(models.Model):
 
     magento_order_id = fields.Char()
     magento_instance_id = fields.Many2one("magento.instance")
+    sync_to_magento = fields.Boolean()
+
+
 
 
 class SaleOrderLine(models.Model):

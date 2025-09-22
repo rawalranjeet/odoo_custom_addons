@@ -123,13 +123,17 @@ class MagentoOperationWizard(models.TransientModel):
                     'default_code': item.get('sku'),
                     'magento_instance_id': self.magento_instance_id.id,
                     'magento_sku_id': item.get('sku'),
+                    'sync_to_magento': True,
+                    'from_magento_operation': True,
                 })
             else:
 
                 product_template.write({
                     'magento_instance_id': self.magento_instance_id.id,
                     'magento_sku_id': item.get('sku'),
-                    'from_import_operation': True,
+                    'from_magento_operation': True,
+                    'sync_to_magento': True,
+                    'from_magento_operation': True,
                 })
 
             
@@ -254,47 +258,7 @@ class MagentoOperationWizard(models.TransientModel):
                 'sync_to_magento' : True,
             }
 
-
-            # res_partner.write({
-            #     'magento_instance_id': self.magento_instance_id.id,
-            #     'magento_customer_id': customer.get('id'),
-            #     'dob': customer.get('dob'),
-            #     'gender': 'male' if customer.get('gender') == 1 else 'female' if customer.get('gender') == 2 else 'other',
-                
-            # })
-
             addresses = customer.get('addresses')
-            
-            if addresses:
-
-                country = self.env['res.country'].search([('code', '=', addresses[0].get('country_id'))])
-                if addresses[0].get('region').get('region') != None and country:
-                    if addresses[0].get('region_id') == 0:
-                        state = self.env['res.country.state'].search([('name','=', addresses[0].get('region').get('region')), ('country_id','=',country.id)])
-                    else:
-                        state = self.env['res.country.state'].search([('code','=', addresses[0].get('region').get('region_code')), ('country_id','=',country.id)])
-                else:
-                    state = False
-
-                vals.update({
-                    'street': addresses[0].get('street')[0],
-                    'street2': addresses[0].get('street')[1] if len(addresses[0].get('street'))>1 else '',
-                    'city': addresses[0].get('city'),
-                    'zip': addresses[0].get('postcode'),
-                    'state_id': state.id if state else False,
-                    'country_id': country.id if country else False,
-                    'phone': addresses[0].get('telephone'),
-                })
-            
-                # res_partner.write({
-                #     'street': addresses[0].get('street')[0],
-                #     'street2': addresses[0].get('street')[1] if len(addresses[0].get('street'))>1 else '',
-                #     'city': addresses[0].get('city'),
-                #     'zip': addresses[0].get('postcode'),
-                #     'state_id': state.id if state else False,
-                #     'country_id': country.id if country else False,
-                #     'phone': addresses[0].get('telephone'),
-                # })
 
             full_name = customer.get('firstname') + " "
 
@@ -306,27 +270,16 @@ class MagentoOperationWizard(models.TransientModel):
             vals.update({
                 'name': full_name,
                 'email': customer.get('email'),
+                'from_magento_operation': True,
             })
 
             if not res_partner:
                 new_customer_added += 1
+                res_partner = res_partner.create(vals)
 
-                vals.update({
-                    'from_import_operation': True,
-                })
-
-                res_partner.create(vals)
-
-                # res_partner = res_partner.create({
-                #     'name': f"{customer.get('firstname')} {customer.get('middlename')} {customer.get('lastname')}",
-                #     'email': customer.get('email'),
-                # })
             else:
-                vals.update({
-                    'from_import_operation': True,
-                })
-                res_partner.write(vals)
 
+                res_partner.write(vals)
 
             # adding addresses to the partner
             for address in addresses:
@@ -364,16 +317,14 @@ class MagentoOperationWizard(models.TransientModel):
                     'city': address.get('city'),
                     'state_id': state.id if state else False,
                     'sync_to_magento': True,
-                    'type': 'other'
+                    'type': 'delivery' if address.get('default_shipping') else 'invoice' if address.get('default_billing') else 'other',
+                    'from_magento_operation': True,
                 }
+
 
                 if not child_partner:
                     child_partner.create(child_vals)
                 else:
-                    # prevent from making unwanted request to magento
-                    child_vals.update({
-                        'from_import_operation': True,
-                    })
                     child_partner.write(child_vals)
                 
             
@@ -515,13 +466,8 @@ class MagentoOperationWizard(models.TransientModel):
 
                     partner = order.partner_id
 
-                    full_name = partner.name
 
-                    parts = full_name.strip().split()
-
-                    first_name = parts[0] if len(parts) > 0 else ""
-                    middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
-                    last_name = parts[-1] if len(parts) > 1 else ""
+                    first_name, middle_name, last_name = self.get_magento_name(partner.name)
 
                     if not first_name or not last_name:
                         continue;
@@ -529,10 +475,11 @@ class MagentoOperationWizard(models.TransientModel):
                     if not partner.phone or not partner.street or not partner.city or not partner.state_id or not partner.zip or not partner.country_code:
                         continue;
                         
-
+                    import pdb; pdb.set_trace()
                     # Create a cart
                     params = ''
-                    cart_response = self.magento_make_request('/guest-carts', params,None , 'POST')
+                    # cart_response = self.magento_make_request('/guest-carts', params,None , 'POST')
+                    cart_response = self.magento_make_request(f'/customers/{partner.magento_customer_id}/carts', params,None , 'POST')
                     magento_cart_id = cart_response
                     
 
@@ -550,10 +497,16 @@ class MagentoOperationWizard(models.TransientModel):
                             }
                         }
 
-                        self.magento_make_request(f'/guest-carts/{magento_cart_id}/items', params, item_payload, 'POST')
+                        self.magento_make_request(f'/carts/{magento_cart_id}/items', params, item_payload, 'POST')
+                        # self.magento_make_request(f'/guest-carts/{magento_cart_id}/items', params, item_payload, 'POST')
 
                     if total_product_added == 0:
                         continue;
+                    
+                    shipping_address = {}
+                    billing_address = {}
+
+                    
                     
                     # shipping details
                     shipping_payload = {
@@ -589,7 +542,8 @@ class MagentoOperationWizard(models.TransientModel):
 
                    
 
-                    response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/shipping-information', params, shipping_payload, 'POST')
+                    # response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/shipping-information', params, shipping_payload, 'POST')
+                    response = self.magento_make_request(f'/carts/{magento_cart_id}/shipping-information', params, shipping_payload, 'POST')
 
                     # payment methods
                     payment_payload = {
@@ -598,11 +552,13 @@ class MagentoOperationWizard(models.TransientModel):
                         }
                     }
 
-                    response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/selected-payment-method', params, payment_payload, 'PUT')
+                    # response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/selected-payment-method', params, payment_payload, 'PUT')
+                    response = self.magento_make_request(f'/carts/{magento_cart_id}/selected-payment-method', params, payment_payload, 'PUT')
                     
 
                     # create an order
-                    magento_order_id = self.magento_make_request(f'/guest-carts/{magento_cart_id}/order', params, None, 'PUT')
+                    magento_order_id = self.magento_make_request(f'/carts/{magento_cart_id}/order', params, None, 'PUT')
+                    # magento_order_id = self.magento_make_request(f'/guest-carts/{magento_cart_id}/order', params, None, 'PUT')
 
                     order.write({
                         'magento_order_id': magento_order_id,
@@ -640,10 +596,16 @@ class MagentoOperationWizard(models.TransientModel):
             if not order_line:
                 raise UserError("Selected Order has no products added")
 
+            partner = self.order_id.partner_id
 
+            if not partner.magento_customer_id:
+                raise UserError("Selected Order's customer is not linked to any magento customer")
+            
             # Create a cart
             params = ''
-            cart_response = self.magento_make_request('/guest-carts', params,None , 'POST')
+            import pdb; pdb.set_trace()
+            # cart_response = self.magento_make_request('/guest-carts', params,None , 'POST')
+            cart_response = self.magento_make_request(f'/customers/{partner.magento_customer_id}/carts', params,None , 'POST')
             magento_cart_id = cart_response
 
             # Add items to cart
@@ -656,18 +618,13 @@ class MagentoOperationWizard(models.TransientModel):
                     }
                 }
 
-                self.magento_make_request(f'/guest-carts/{magento_cart_id}/items', params, item_payload, 'POST')
+                # self.magento_make_request(f'/guest-carts/{magento_cart_id}/items', params, item_payload, 'POST')
+                self.magento_make_request(f'/carts/{magento_cart_id}/items', params, item_payload, 'POST')
 
             # shipping details\
             partner = self.order_id.partner_id
 
-            full_name = partner.name
-
-            parts = full_name.strip().split()
-
-            first_name = parts[0] if len(parts) > 0 else ""
-            middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
-            last_name = parts[-1] if len(parts) > 1 else ""
+            first_name, middle_name, last_name = self.get_magento_name(partner.name)
 
             if not first_name or not last_name:
                 raise UserError("customer name is incomplete")
@@ -704,7 +661,7 @@ class MagentoOperationWizard(models.TransientModel):
                 }
             }
 
-            response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/shipping-information', params, shipping_payload, 'POST')
+            response = self.magento_make_request(f'/carts/{magento_cart_id}/shipping-information', params, shipping_payload, 'POST')
 
             # payment methods
             payment_payload = {
@@ -713,11 +670,11 @@ class MagentoOperationWizard(models.TransientModel):
                 }
             }
 
-            response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/selected-payment-method', params, payment_payload, 'PUT')
+            response = self.magento_make_request(f'/carts/{magento_cart_id}/selected-payment-method', params, payment_payload, 'PUT')
             
 
             # create an order
-            magento_order_id = self.magento_make_request(f'/guest-carts/{magento_cart_id}/order', params, None, 'PUT')
+            magento_order_id = self.magento_make_request(f'/carts/{magento_cart_id}/order', params, None, 'PUT')
 
             self.order_id.write({
                 'magento_order_id': magento_order_id,
@@ -730,6 +687,7 @@ class MagentoOperationWizard(models.TransientModel):
         if self.export_all:
             res_partners = self.env['res.partner'].search([
                 ('magento_customer_id','=',False), 
+                ('magento_address_id','=',False), 
                 ('email', '!=', False),
                 ('dob', '!=', False),
                 ('gender', '!=', False),
@@ -756,41 +714,38 @@ class MagentoOperationWizard(models.TransientModel):
 
                     total_customer_exported += 1
 
-                    full_name = partner.name
-                    parts = full_name.strip().split()
-
-                    first_name = parts[0] if len(parts) > 0 else ""
-                    middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
-                    last_name = parts[-1] if len(parts) > 1 else ""
+                    first_name, middle_name, last_name = self.get_magento_name(partner.name)
 
                     if not first_name or not last_name:
                         continue;
 
-                    if partner.street and partner.country_id and partner.city and partner.zip and partner.phone:
-                        
-                        if partner.state_id:
-                            region = {
-                                "region_code": partner.state_id.code,
-                                "region": partner.state_id.name,
-                            }
-                        else:
-                            region = {}
+                    addresses = []
+
+                    for child_partner in partner.child_ids:
+
+                        child_first_name, child_middle_name, child_last_name = self.get_magento_name(child_partner.name)
+
+                        if not child_first_name or not child_last_name or not child_partner.phone or not child_partner.street or not child_partner.city or not child_partner.zip or not child_partner.country_id:
+                            continue;
 
                         address = {
-                                "firstname": first_name,
-                                "middlename": middle_name,
-                                "lastname": last_name,
-                                "street": [partner.street, partner.street2],
-                                "city": partner.city,
-                                "postcode": partner.zip,
-                                "telephone": partner.phone,
-                                "country_id": partner.country_id.code,
-                                "region": region,
+                                "firstname": child_first_name,
+                                "middlename": child_middle_name,
+                                "lastname": child_last_name,
+                                "street": [child_partner.street, child_partner.street2],
+                                "city": child_partner.city,
+                                "postcode": child_partner.zip,
+                                "telephone": child_partner.phone,
+                                "country_id": child_partner.country_code,
+                                "region": {
+                                    "region_code": child_partner.state_id.code,
+                                    "region": child_partner.state_id.name,
+                                } if child_partner.state_id else {},
+                                "default_shipping": True if child_partner.type == 'delivery' else False,
+                                "default_billing": True if child_partner.type == 'invoice' else False,
                             }
                         
-                    else:
-                        address = {}
-
+                        addresses.append(address)
 
                     payload = {
                         "customer": {
@@ -799,8 +754,8 @@ class MagentoOperationWizard(models.TransientModel):
                             "middlename": middle_name,
                             "lastname": last_name,
                             "gender": 1 if partner.gender == 'male' else 2 if partner.gender == 'female' else 3,
-                            "dob" : partner.dob.strftime("%Y-%m-%d"),
-                            "addresses": [address],
+                            "dob" : partner.dob.strftime("%Y-%m-%d") if partner.dob else None,
+                            "addresses": addresses,
                         }
                     }
 
@@ -809,9 +764,12 @@ class MagentoOperationWizard(models.TransientModel):
                     response = self.magento_make_request('/customers', params, payload, 'POST')
                     
 
-                    if response: 
-                        partner.magento_customer_id = response.get('id')
-                        partner.magento_instance_id = self.magento_instance_id.id
+                    partner.write({
+                        'magento_customer_id': response.get('id'),
+                        'magento_instance_id': self.magento_instance_id.id,
+                        'sync_to_magento': True,
+                        'from_magento_operation': True,
+                    })
 
                 return {
                     'type': 'ir.actions.client',
@@ -841,41 +799,38 @@ class MagentoOperationWizard(models.TransientModel):
 
             params = ''
 
-            if not self.partner_id.dob or not self.partner_id.gender:
-                raise UserError("Selected Customer has no Dob or Gender defined")
+            first_name, middle_name, last_name = self.get_magento_name(self.partner_id.name)
 
+            if not first_name or not last_name:
+                raise UserError("Customer name is incomplete")
+            
+            addresses = []
 
-            full_name = self.partner_id.name
+            for child_partner in self.partner_id.child_ids:
 
-            parts = full_name.strip().split()
+                child_first_name, child_middle_name, child_last_name = self.get_magento_name(child_partner.name)
 
-            first_name = parts[0] if len(parts) > 0 else ""
-            middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
-            last_name = parts[-1] if len(parts) > 1 else ""
-
-            if self.partner_id.street and self.partner_id.country_id and self.partner_id.city and self.partner_id.zip and self.partner_id.phone:
-                        
-                if partner.state_id:
-                    region = {
-                        "region_code": partner.state_id.code,
-                    }
-                else:
-                    region = {}
+                if not child_first_name or not child_last_name or not child_partner.phone or not child_partner.street or not child_partner.city or not child_partner.zip or not child_partner.country_id:
+                    continue;
 
                 address = {
-                        "firstname": first_name,
-                        "middlename": middle_name,
-                        "lastname": last_name,
-                        "street": [partner.street, partner.street2],
-                        "city": partner.city,
-                        "postcode": partner.zip,
-                        "telephone": partner.phone,
-                        "country_id": partner.country_id.code,
-                        "region": region,
+                        "firstname": child_first_name,
+                        "middlename": child_middle_name,
+                        "lastname": child_last_name,
+                        "street": [child_partner.street, child_partner.street2],
+                        "city": child_partner.city,
+                        "postcode": child_partner.zip,
+                        "telephone": child_partner.phone,
+                        "country_id": child_partner.country_code,
+                        "region": {
+                            "region_code": child_partner.state_id.code,
+                            "region": child_partner.state_id.name,
+                        } if child_partner.state_id else {},
+                        "default_shipping": True if child_partner.type == 'delivery' else False,
+                        "default_billing": True if child_partner.type == 'invoice' else False,
                     }
                 
-            else:
-                address = {}
+                addresses.append(address)
 
             payload = {
                 "customer": {
@@ -884,16 +839,21 @@ class MagentoOperationWizard(models.TransientModel):
                     "middlename": middle_name,
                     "lastname": last_name,
                     "gender": 1 if self.partner_id.gender == 'male' else 2 if self.partner_id.gender == 'female' else 3,
-                    "dob" : self.partner_id.dob.strftime("%Y-%m-%d"),
-                    "addresses": [address],
+                    "dob" : self.partner_id.dob.strftime("%Y-%m-%d") if self.partner_id.dob else None,
+                    "addresses": addresses,
                 }
             }
 
             response = self.magento_make_request('/customers',params, payload, 'POST')
 
             if response: 
-                self.partner_id.magento_customer_id = response.get('id')
-                self.partner_id.magento_instance_id = self.magento_instance_id.id
+                self.partner_id.write({
+                    'magento_customer_id': response.get('id'),
+                    'magento_instance_id': self.magento_instance_id.id,
+                    'sync_to_magento': True,
+                    'from_magento_operation': True,
+                })
+
             
             return {
                     'type': 'ir.actions.client',
@@ -909,3 +869,13 @@ class MagentoOperationWizard(models.TransientModel):
 
 
 
+    # Helper function
+    def get_magento_name(self, name):
+
+        parts = name.strip().split()
+
+        first_name = parts[0] if len(parts) > 0 else ""
+        middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
+        last_name = parts[-1] if len(parts) > 1 else ""
+
+        return first_name, middle_name, last_name

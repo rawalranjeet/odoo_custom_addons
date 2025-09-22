@@ -127,6 +127,8 @@ class MagentoInstance(models.Model):
                 response = requests.post(url, params= params, json = payload, verify=False, headers=headers, timeout=20)
             elif method == 'PUT':
                 response = requests.put(url, params= params, json = payload, verify=False, headers=headers, timeout=20)
+            elif method == 'DELETE':
+                response = requests.delete(url, params= params, json = payload, verify=False, headers=headers, timeout=20)
         
             response.raise_for_status()
 
@@ -165,7 +167,19 @@ class MagentoInstance(models.Model):
                 "custom_attributes": [
                     { "attribute_code": "description", "value": product_template.description },
                     { "attribute_code": "url_key", "value": url_key },
-                ]
+                ],
+                "extension_attributes": {
+                    "stock_item": {
+                        "qty": product_template.qty_available,
+                        "is_in_stock": True if product_template.qty_available > 0 else False,
+                    },
+                    "category_links": [
+                        {
+                            "position": 0,
+                            "category_id": "2"
+                        }
+                    ],
+                }
             }
         }
 
@@ -174,15 +188,42 @@ class MagentoInstance(models.Model):
     def magento_update_customer(self, partner, vals):
         params = ''
 
-        full_name = partner.name
-        parts = full_name.strip().split()
-
-        first_name = parts[0] if len(parts) > 0 else ""
-        middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
-        last_name = parts[-1] if len(parts) > 1 else ""
+        first_name, middle_name, last_name = self.get_magento_name(partner.name)
 
         if not last_name:
             raise UserError("Please provide last name for the customer")
+        
+
+        addresses = []
+
+        for child_partner in partner.child_ids:
+
+            child_first_name, child_middle_name, child_last_name = self.get_magento_name(child_partner.name)
+
+            if not child_first_name or not child_last_name or not child_partner.phone or not child_partner.street or not child_partner.city or not child_partner.zip or not child_partner.country_id:
+                continue;
+
+            address = {
+                    "firstname": child_first_name,
+                    "middlename": child_middle_name,
+                    "lastname": child_last_name,
+                    "street": [child_partner.street, child_partner.street2],
+                    "city": child_partner.city,
+                    "postcode": child_partner.zip,
+                    "telephone": child_partner.phone,
+                    "country_id": child_partner.country_code,
+                    "region": {
+                        "region_code": child_partner.state_id.code,
+                        "region": child_partner.state_id.name,
+                    } if child_partner.state_id else {},
+                    "default_shipping": True if child_partner.type == 'delivery' else False,
+                    "default_billing": True if child_partner.type == 'invoice' else False,
+                }
+
+            if child_partner.magento_address_id:
+                address['id'] = child_partner.magento_address_id
+            
+            addresses.append(address)
 
         payload = {
             "customer": {
@@ -192,6 +233,7 @@ class MagentoInstance(models.Model):
                 "gender": 1 if partner.gender == 'male' else 2 if partner.gender == 'female' else 3,
                 "dob" : partner.dob.strftime("%Y-%m-%d") if partner.dob else False,
                 "email": partner.email,
+                "addresses": addresses,
             }
         }
 
@@ -199,70 +241,49 @@ class MagentoInstance(models.Model):
         return self.magento_make_request(f'/customers/{partner.magento_customer_id}', params, payload, 'PUT')
 
 
-    def magento_update_customer_address(self, partner, vals):
-        params = ''
-
-        if partner.street and partner.country_id and partner.city and partner.zip and partner.phone:
-                        
-            if partner.state_id:
-                region = {
-                    "region_code": partner.state_id.code,
-                    "region": partner.state_id.name,
-                }
-            else:
-                region = {}
-
-            full_name = partner.name
-            parts = full_name.strip().split()
-
-            first_name = parts[0] if len(parts) > 0 else ""
-            middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
-            last_name = parts[-1] if len(parts) > 1 else ""
-
-            if not last_name or not first_name:
-                raise UserError("Please provide first and last name for the customer")
-            
-            address = {
-                    "id": partner.magento_address_id,
-                    "customer_id": partner.parent_id.magento_customer_id,
-                    "street": [partner.street, partner.street2],
-                    "city": partner.city,
-                    "postcode": partner.zip,
-                    "telephone": partner.phone,
-                    "country_id": partner.country_id.code,
-                    "region": region,
-                    "firstname": first_name,
-                    "lastname": last_name,
-                    "middlename": middle_name,
-                }
-
-            payload = {
-                "customer": {
-                    "addresses": [address]
-                }
-            }
-
-
-            return self.magento_make_request(f'/customers/{partner.parent_id.magento_customer_id}', params, payload, 'PUT')
-
-
-    # CREATE Methods:::::::::::
+    # CREATE Methods :::::::::::
 
     def magento_create_customer(self, partner):
         params = ''
 
-        full_name = partner.name
-        parts = full_name.strip().split()
-
-        first_name = parts[0] if len(parts) > 0 else ""
-        middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
-        last_name = parts[-1] if len(parts) > 1 else ""
+        first_name, middle_name, last_name = self.get_magento_name(partner.name)
 
         if not last_name:
             raise UserError("Please provide last name for the customer")
         
-        if not partner.email:
+        if not partner.email and not partner.magento_address_id:
             raise UserError("Please provide the email for the customer")
+        
+        addresses = []
+
+        for child_partner in partner.child_ids:
+
+            child_first_name, child_middle_name, child_last_name = self.get_magento_name(child_partner.name)
+
+            if not child_first_name or not child_last_name or not child_partner.phone or not child_partner.street or not child_partner.city or not child_partner.zip or not child_partner.country_id:
+                continue;
+
+            address = {
+                    "firstname": child_first_name,
+                    "middlename": child_middle_name,
+                    "lastname": child_last_name,
+                    "street": [child_partner.street, child_partner.street2],
+                    "city": child_partner.city,
+                    "postcode": child_partner.zip,
+                    "telephone": child_partner.phone,
+                    "country_id": child_partner.country_code,
+                    "region": {
+                        "region_code": child_partner.state_id.code,
+                        "region": child_partner.state_id.name,
+                    } if child_partner.state_id else {},
+                    "default_shipping": True if child_partner.type == 'delivery' else False,
+                    "default_billing": True if child_partner.type == 'invoice' else False,
+                }
+
+            if child_partner.magento_address_id:
+                address['id'] = child_partner.magento_address_id
+            
+            addresses.append(address)
 
         payload = {
             "customer": {
@@ -272,9 +293,75 @@ class MagentoInstance(models.Model):
                 "gender": 1 if partner.gender == 'male' else 2 if partner.gender == 'female' else 3,
                 "dob" : partner.dob.strftime("%Y-%m-%d") if partner.dob else False,
                 "email": partner.email,
+                "addresses": addresses,
             }
         }
 
 
-        return self.magento_make_request('/customers', params, payload, 'POST')        
+        return self.magento_make_request('/customers', params, payload, 'POST')
+
+
+    def magento_create_product(self, product_template):
+        if not product_template.default_code:
+            raise UserError("Please provide default code or SKU for the product")
+        
+        payload = {
+            "product": {
+                "sku": product_template.default_code,
+                "name": product_template.name,
+                "price": product_template.list_price,
+                "status": 1 if product_template.is_published else 2,
+                "type_id": ODOO_TO_MAGENTO_PRODUCT_TYPE[product_template.type],
+                "attribute_set_id": 4,
+                "weight": product_template.weight if product_template.weight else 1,
+                "visibility": 4,
+                "custom_attributes": [
+                    { "attribute_code": "description", "value": product_template.description },
+                    { "attribute_code": "url_key", "value": f"{"-".join(product_template.name.lower().split()).replace("'", "")}-{product_template.id}" },
+                ],
+                "extension_attributes": {
+                    "stock_item": {
+                        "qty": product_template.qty_available,
+                        "is_in_stock": True if product_template.qty_available > 0 else False,
+                    },
+                    "category_links": [
+                        {
+                            "position": 0,
+                            "category_id": "2"
+                        }
+                    ],
+                }
+            }
+        }
+
+        return self.magento_make_request('/products', '', payload, 'POST')
+        
+        
+
+
+    # DELETE Methods :::::::::::
+    def magento_delete_customer(self, partner):
+        return self.magento_make_request(f'/customers/{partner.magento_customer_id}', '', None, 'DELETE')
+    
+    def magento_delete_products(self, magento_sku_ids):
+        for sku in magento_sku_ids:
+            result = self.magento_make_request(f'/products/{sku}', '', None, 'DELETE')
+
+            if result is False:
+                return False
+            
+        return True
+
+
+
+    # Helper Methods :::::::::::
+    def get_magento_name(self, name):
+
+        parts = name.strip().split()
+
+        first_name = parts[0] if len(parts) > 0 else ""
+        middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else ""
+        last_name = parts[-1] if len(parts) > 1 else ""
+
+        return first_name, middle_name, last_name     
 

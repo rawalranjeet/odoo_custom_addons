@@ -1,6 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <record id="sale_order_view_form_inherit" model="ir.ui.view">
+        <field name="name">sale.order.view.form.inherit</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <notebook>
+                <page name="magento" string="Magento">
+                    <group >
+                        <field name="sync_to_magento"/>
+                        <field name="magento_instance_id" invisible = "not sync_to_magento" required = "sync_to_magento"/>
+
+                        <field name="magento_order_id" invisible = "not sync_to_magento"/>
+                    </group>
+                    
+                </page>
+            </notebook>
+        </field>
+    </record>
+
     <record id="magento_orders_view_action" model="ir.actions.act_window">
         <field name="name">Magento Orders</field>
         <field name="res_model">sale.order</field>
