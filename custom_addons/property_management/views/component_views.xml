@@ -1,0 +1,183 @@
+<odoo>
+  <record id="view_tree_component_component" model="ir.ui.view">
+    <field name="name">property.component.component.tree</field>
+    <field name="model">property.component.component</field>
+    <field name="arch" type="xml">
+      <list string="Components">
+        <field name="name"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_form_component_component" model="ir.ui.view">
+    <field name="name">property.component.component.form</field>
+    <field name="model">property.component.component</field>
+    <field name="arch" type="xml">
+      <form string="Component">
+        <group>
+          <field name="name"/>
+          <!-- <field name="length"/>
+          <field name="height"/> -->
+          <field name="measurement_type"/>
+          <field name="component_type"/>
+          <field name="int_or_ext"/>
+          <field name="room_line_char" options="{'no_create': True, 'no_open': True}" invisible="1"/>
+        </group>
+      </form>
+    </field>
+  </record>
+  <record id="view_component_component_kanban_select" model="ir.ui.view">
+    <field name="name">property.component.component.kanban.select</field>
+    <field name="model">property.component.component</field>
+    <field name="arch" type="xml">
+      <kanban class="o_kanban_mobile" action="open_component" type="object" create="false">
+        <field name="name"/>
+        <field name="room_line_char"/>
+        <field name="room_line_id"/>
+        <field name="is_added"/>
+        <!-- <field name="length"/>
+        <field name="height"/> -->
+        <field name="measurement_type"/>
+        <field name="component_type"/>
+        <field name="int_or_ext"/>
+        <field name="sqft"/>
+        <field name="unit"/>
+        <field name="feet"/>
+        <templates>
+          <t t-name="kanban-box">
+            <t t-set="is_added" t-value="record.is_added.raw_value"/>
+            <t t-set="measurement_type" t-value="record.measurement_type.raw_value"/>
+
+            <t t-if="is_added">
+              <div class="oe_kanban_card o_kanban_record">
+                <div class="d-flex justify-content-between">
+                  <strong><field name="name"/></strong>
+                  <button class="btn btn-success btn-sm" disabled="1">
+                    <i class="fa fa-check"/> Added
+                  </button>
+                </div>
+
+                <!-- Length & Height Section
+                <div style="margin-top: 10px;">
+                  Length
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold me-2">Length</span>
+                    <div class="input-group" style="width: 120px;">
+                      <button type="object" name="decrease_length" class="btn btn-dark fw-bold btn-purple">−</button>
+                      <span class="form-control text-center border-dark bg-light fw-bold">
+                        <field name="length"/>
+                      </span>
+                      <button type="object" name="increase_length" class="btn btn-dark fw-bold btn-purple">＋</button>
+                    </div>
+                  </div>
+                  <br/>
+                  Height
+                   <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold me-2">Height</span>
+                    <div class="input-group" style="width: 120px;">
+                      <button type="object" name="decrease_height" class="btn btn-dark fw-bold btn-purple">−</button>
+                      <span class="form-control text-center border-dark bg-light fw-bold">
+                        <field name="height"/>
+                      </span>
+                      <button type="object" name="increase_height" class="btn btn-dark fw-bold btn-purple">＋</button>
+                    </div>
+                  </div>
+                </div> -->
+
+                <!-- Length & Height Section -->
+                <div style="margin-top: 10px;">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <t t-if="measurement_type == 'linear'">
+                      <span class="fw-bold me-2">Feet</span>
+                      <div class="input-group" style="width: 120px;">
+                        <button type="object" name="decrease_feet" class="btn btn-dark fw-bold btn-purple">−</button>
+                        <span class="form-control text-center border-dark bg-light fw-bold">
+                          <field name="feet"/>
+                        </span>
+                        <button type="object" name="increase_feet" class="btn btn-dark fw-bold btn-purple">＋</button>
+                      </div>
+                    </t>
+                    <t t-elif="measurement_type == 'sqft'">
+                      <span class="fw-bold me-2">Sqft</span>
+                      <div class="input-group" style="width: 120px;">
+                        <button type="object" name="decrease_sqft" class="btn btn-dark fw-bold btn-purple">−</button>
+                        <span class="form-control text-center border-dark bg-light fw-bold">
+                          <field name="sqft"/>
+                        </span>
+                        <button type="object" name="increase_sqft" class="btn btn-dark fw-bold btn-purple">＋</button>
+                      </div>
+                    </t>
+                    <t t-elif="measurement_type == 'count'">
+                      <span class="fw-bold me-2">Unit</span>
+                      <div class="input-group" style="width: 120px;">
+                        <button type="object" name="decrease_unit" class="btn btn-dark fw-bold btn-purple">−</button>
+                        <span class="form-control text-center border-dark bg-light fw-bold">
+                          <field name="unit"/>
+                        </span>
+                        <button type="object" name="increase_unit" class="btn btn-dark fw-bold btn-purple">＋</button>
+                      </div>
+                    </t>
+                  </div>
+                  <br></br>
+                  <div class="d-flex justify-content-between align-items-center">
+                   <field name="preparation_ids" widget="many2many_tags"/>
+                   <button type="object" name="action_open_preparation" class="btn btn-dark fw-bold btn-purple">Add Prep</button>
+                  </div>
+                    <button type="object" name="add_component_services" class="btn btn-dark fw-bold btn-purple" invisible="not context.get('order_id')">Add Service</button>
+                </div>
+              </div>
+            </t>
+
+            <t t-else="">
+              <div class="oe_kanban_card o_kanban_record">
+                <div class="d-flex justify-content-between">
+                  <strong><field name="name"/></strong>
+                  <button type="object" name="add_component" class="btn btn-primary btn-sm">
+                    <i class="fa fa-plus"/> Add
+                  </button>
+                </div>
+              </div>
+            </t>
+          </t>
+        </templates>
+      </kanban>
+
+    </field>
+  </record>
+
+
+
+  <record id="view_component_component_kanban" model="ir.ui.view">
+    <field name="name">property.component.component.kanban</field>
+    <field name="model">property.component.component</field>
+    <field name="arch" type="xml">
+      <kanban>
+        <field name="name"/>
+        <templates>
+          <t t-name="kanban-box">
+            <div class="o_kanban_record">
+              <strong><field name="name"/></strong>
+            </div>
+          </t>
+        </templates>
+      </kanban>
+    </field>
+  </record>
+
+  <record id="action_room_component_kanban" model="ir.actions.act_window">
+    <field name="name">Components</field>
+    <field name="res_model">property.component.component</field>
+    <field name="view_mode">kanban,list,form</field>
+    <field name="view_id" ref="view_component_component_kanban_select"/>
+  </record>
+
+  <record id="action_component_component" model="ir.actions.act_window">
+    <field name="name">Components</field>
+    <field name="res_model">property.component.component</field>
+    <field name="view_mode">kanban,list,form</field>
+    <field name="view_id" ref="view_component_component_kanban"/>
+  </record>
+
+  <menuitem id="menu_component_component" name="Components" parent="menu_property_configuration" action="action_component_component" sequence="2"/>
+
+</odoo>

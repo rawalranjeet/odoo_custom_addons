@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates>
+    <t t-name="property.KanbanAttachmentUploader">
+        <div t-on-click.stop="">
+            <FileUploader multiUpload="true" onUploaded.bind="onFileUploaded">
+                <t t-set-slot="toggler">
+                    <button type="button" class="btn btn-link text-action px-1 d-flex align-items-center">
+                        <i class="fa fa-paperclip fa-lg me-1"/>
+                        <sup t-if="props.record.data.attachment_ids.raw_value and props.record.data.attachment_ids.raw_value.length > 0">
+                            <t t-esc="props.record.data.attachment_ids.raw_value.length"/>
+                        </sup>
+                    </button>
+                </t>
+            </FileUploader>
+        </div>
+    </t>
+    <t t-name="Custom.ControlPanel.RemoveCreate"
+       t-inherit="web.ControlPanel"
+       t-inherit-mode="extension">
+
+        <xpath expr="//div[@class='btn-group o_control_panel_collapsed_create']" position="replace">
+            <t t-if="props?.resModel === 'property.room.room' and props?.context?.order_id and env.isSmall">
+                <div t-if="env.isSmall" class="btn-group o_control_panel_collapsed_create"/>
+            </t>
+        </xpath>
+    </t>
+</templates>
+

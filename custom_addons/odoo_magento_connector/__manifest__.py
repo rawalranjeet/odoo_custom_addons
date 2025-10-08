@@ -14,7 +14,7 @@ customers, sales orders, and inventory levels.
     'category': 'Productivity/Connector',
     'version': '18.0.1.0',
     'depends': [
-       'base', 'product', 'sale', 'sale_management', 'website'
+       'base', 'product', 'sale', 'sale_management', 'website', 'stock', 'website_sale'
     ],
     
     'data': [

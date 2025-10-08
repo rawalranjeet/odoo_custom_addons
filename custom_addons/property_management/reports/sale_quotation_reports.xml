@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="report_saleorder_document_inherit_sale_management_replace" inherit_id="sale.report_saleorder_document">
+        <!-- Target only the second div (t-else) -->
+        <xpath expr="//div[@name='signature']/following-sibling::div[2]" position="replace">
+            <div t-else="" name="option_div" style="page-break-inside: avoid;">
+                <t t-set="has_option_discount" t-value="any(option.discount != 0.0 for option in doc.sale_order_option_ids)" />
+                <div>
+                    <h4 name="h_optional_products">
+                        <span>Options</span>
+                    </h4>
+                    <table name="table_optional_products" class="table table-sm">
+                        <thead class="fw-bold">
+                            <tr>
+                                <td name="th_option_name" class="text-start">Description</td>
+                                <td t-if="has_option_discount" name="th_option_discount" class="text-start">Disc.%</td>
+                                <td name="th_option_price_unit" class="text-end">Unit Price</td>
+                            </tr>
+                        </thead>
+                        <tbody class="sale_tbody">
+                            <tr t-foreach="doc.sale_order_option_ids" t-as="option">
+                                <td name="td_option_name">
+                                    <span t-field="option.name">Extra Chips</span>
+                                </td>
+                                <td t-if="has_option_discount" name="td_option_discount">
+                                    <strong t-if="option.discount != 0.0" class="text-info">
+                                        <t t-out="((option.discount % 1) and '%s' or '%d') % option.discount">-</t>%
+                                    </strong>
+                                </td>
+                                <td name="td_option_price_unit">
+                                    <strong class="text-end">
+                                        <div t-field="option.price_unit"
+                                            t-options='{"widget": "monetary", "display_currency": doc.currency_id}'
+                                            t-att-style="option.discount and 'text-decoration: line-through' or None"
+                                            t-att-class="option.discount and 'text-danger' or None">1.5</div>
+                                        <div t-if="option.discount">
+                                            <t t-out="((1-option.discount / 100.0) * option.price_unit)" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'> </t>
+                                        </div>
+                                    </strong>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="oe_structure">&#8203;</div>
+            </div>
+        </xpath>
+    </template>
+    <template id="report_saleorder_document_inherit_job_summary" inherit_id="property_management.report_saleorder_document_inherit_sale_management_replace">
+        <xpath expr="//div[@name='option_div']" position="after">
+            <div style="page-break-inside: avoid; page-break-before: always;">
+                <div style="margin-top:30px;">
+                    <h4 name="h_job_summary">
+                        <span>Job Summary</span>
+                    </h4>
+                    <div name="job_summary_content" class="text-muted">
+                        <t t-if="doc.job_summary">
+                            <span t-field="doc.job_summary"/>
+                        </t>
+                        <t t-else="">
+                            <span>No job summary provided.</span>
+                        </t>
+                    </div>
+                    <div class="oe_structure" name="job_summary_structure">&#8203;</div>
+                </div>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[@name='job_summary_structure']" position="after">
+            <div t-if="doc.component_order_line_ids" class="mt-3" style="page-break-inside: avoid;">
+                <h4 name="h_paint_service">
+                    <span>Paint Service Table</span>
+                </h4>
+                <table name="table_paint_service" class="table table-sm">
+                    <thead class="fw-bold">
+                        <tr>
+                            <td name="th_component" class="text-start">Component</td>
+                            <td name="th_room" class="text-start">Room</td>
+                            <td name="th_primer_product" class="text-start">Primer Product</td>
+                            <td name="th_paint_product" class="text-start">Paint Product</td>
+                            <td name="th_sheen" class="text-start">Sheen</td>
+                            <td name="th_color" class="text-start">Color</td>
+                            <td name="th_coats" class="text-start">Coats</td>
+                            <td name="th_primer_coats" class="text-start">Primer Coats</td>
+                        </tr>
+                    </thead>
+                    <tbody class="sale_tbody">
+                        <tr t-foreach="doc.component_order_line_ids" t-as="line">
+                            <td name="td_component">
+                                <span t-field="line.component_id"/>
+                            </td>
+                            <td name="td_room">
+                                <span t-field="line.rooms"/>
+                            </td>
+                            <td name="td_primer_product">
+                                <span t-field="line.primer_product_id.name"/>
+                            </td>
+                            <td name="td_paint_product">
+                                <span t-field="line.paint_product_id.name"/>
+                            </td>
+                            <td name="td_sheen">
+                                <span t-field="line.sheen_id.name"/>
+                            </td>
+                            <td name="td_color">
+                                <span t-field="line.color_id.name"/>
+                            </td>
+                            <td name="td_coats" class="text-start">
+                                <span t-field="line.coats"/>
+                            </td>
+                            <td name="td_primer_coats" class="text-start">
+                                <span t-field="line.primer_coats"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                 <div class="oe_structure" name="paint_service_structure">&#8203;</div>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[@name='paint_service_structure']" position="after">
+            <div t-if="doc.preparation_line_ids" class="mt-3" style="page-break-inside: avoid;">
+                <h4 name="h_prep_item">
+                    <span>Prep Item Table</span>
+                </h4>
+                <table name="table_prep_item" class="table table-sm">
+                    <thead class="fw-bold">
+                        <tr>
+                            <td name="th_component_name" class="text-start">Components</td>
+                            <td name="th_preparation" class="text-start">Preparation</td>
+                        </tr>
+                    </thead>
+                    <tbody class="sale_tbody">
+                        <tr t-foreach="doc.preparation_line_ids" t-as="line">
+                            <td name="td_component_name">
+                                <span t-field="line.name"/>
+                            </td>
+                            <td name="td_preparation">
+                                <span t-esc="', '.join(line.preparation_ids.mapped('name'))"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="oe_structure" name="prep_item_structure">&#8203;</div>
+            </div>
+        </xpath>
+        <xpath expr="//div[@name='prep_item_structure']" position="after">
+            <div t-if="doc.attachment_ids" class="mt-3" style="page-break-inside: avoid;">
+                <h4 name="h_attachments" style="margin-bottom: 12px; font-weight: 600; color: #333;">
+                    <span>Attached Photos</span>
+                </h4>
+
+                <table style="width: 95%; margin: 10px 0 20px; border-collapse: separate; border-spacing: 12px 16px; text-align: center;">
+                    <!-- Build a flat list of (att, img) -->
+                    <t t-set="image_data" t-value="[(att, img) for att in doc.attachment_ids for img in att.attachment_ids if img.datas and img.mimetype.startswith('image/')]"/>
+                    <t t-set="total" t-value="len(image_data)"/>
+                    <t t-set="chunks" t-value="[image_data[i:i+4] for i in range(0, total, 4)]"/>
+
+                    <t t-foreach="chunks" t-as="chunk">
+                        <tr>
+                            <t t-foreach="chunk" t-as="item">
+                                <td style="width: 25%; padding: 0;">
+                                    <!-- Image -->
+                                    <img
+                                        t-att-src="'data:%s;base64,%s' % (item[1].mimetype, item[1].datas.decode('ascii'))"
+                                        style="width: 160px; height: 120px; object-fit: cover; border: 1.5px solid #bbb; box-shadow: 3px 3px 8px rgba(0,0,0,0.15); border-radius: 6px; transition: transform 0.3s ease, box-shadow 0.3s ease;"
+                                        onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='5px 5px 15px rgba(0,0,0,0.3)';"
+                                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='3px 3px 8px rgba(0,0,0,0.15)';"
+                                    />
+
+                                    <div style="margin-top: 4px; font-size: 12px; color: #555;">
+                                        <t t-if="item[0].room_name"><span t-esc="item[0].room_name"/></t>
+                                    </div>
+
+                                    <div style="margin-top: 4px; font-size: 12px; color: #555;">
+                                        <t t-if="item[0].prep_name"><span t-esc="item[0].prep_name"/></t>
+                                    </div>
+                                </td>
+                            </t>
+
+                            <!-- Fill empty columns if less than 4 -->
+                            <t t-if="len(chunk) &lt; 4">
+                                <t t-set="empty_slots" t-value="4 - len(chunk)"/>
+                                <t t-foreach="range(empty_slots)" t-as="i">
+                                    <td></td>
+                                </t>
+                            </t>
+                        </tr>
+                    </t>
+                </table>
+                <div class="oe_structure" name="attachments_structure">&#8203;</div>
+            </div>
+        </xpath>
+
+    </template>
+</odoo>

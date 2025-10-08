@@ -1,0 +1,81 @@
+<odoo>
+    <record id="view_property_parcel_list" model="ir.ui.view">
+        <field name="name">property.parcel.list</field>
+        <field name="model">property.parcel</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="address_id"/>
+                <field name="municipality_id"/>
+                <field name="owner_id"/>
+                <field name="zoning_type"/>
+                <field name="last_sale_date"/>
+                <field name="fema_flood_zone"/>
+                <field name="fema_flood_type_id"/>
+                <field name="total_parcel_value"/>
+                <field name="land_value"/>
+                <field name="company_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_property_parcel_form" model="ir.ui.view">
+        <field name="name">property.parcel.form</field>
+        <field name="model">property.parcel</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                <h1>
+                    <field name="name" nolabel="1"/>
+                </h1>
+                <group>
+                    <group>
+                        <field name="address_id"/>
+                        <field name="municipality_id"/>
+                        <field name="owner_id"/>
+                        <field name="latitude"/>
+                        <field name="longitude"/>
+                        <field name="centroid_coordinates"/>
+                        <field name="size"/>
+                        <field name="size_type"/>
+                    </group>
+                    <group>
+                        <!-- <field name="parcel_id"/> -->
+                        <field name="zoning_type"/>
+                        <field name="last_sale_date"/>
+                        <field name="fema_flood_zone" widget="boolean_toggle"/>
+                        <field name="fema_flood_type_id" invisible="not fema_flood_zone"/>
+                        <field name="total_parcel_value"/>
+                        <field name="land_value"/>
+                        <field name="company_id"/>
+                    </group>
+                </group>
+                <field name="notes" nolabel="1" placeholder="Type down your notes here..."/>
+            </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_property_parcel_map" model="ir.ui.view">
+            <field name="name">property.parcel.map</field>
+            <field name="model">property.parcel</field>
+            <field name="arch" type="xml">
+                <map res_partner="owner_id" hide_name="0" hide_address="0">
+                    <field name="address_id" string="Address"/>
+                    <field name="latitude" string="Latitude"/>
+                    <field name="longitude" string="Longitude"/>
+                    <field name="owner_id" string="Owner"/>
+                </map>
+            </field>
+    </record>
+
+
+    <record id="action_property_parcel" model="ir.actions.act_window">
+        <field name="name">Property Parcels</field>
+        <field name="res_model">property.parcel</field>
+        <field name="view_mode">list,form,map</field>
+    </record>
+
+    <menuitem id="menu_property_parcel" name="Parcel" parent="menu_property_root" action="action_property_parcel"
+     sequence="2" />
+</odoo>

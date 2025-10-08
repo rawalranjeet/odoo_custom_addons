@@ -1,0 +1,24 @@
+<odoo>
+  <record id="view_property_room_edit_wizard_form" model="ir.ui.view">
+    <field name="name">property.room.edit.name.wizard.form</field>
+    <field name="model">property.room.edit.name.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Edit Room">
+        <group>
+          <field name="name"/>
+        </group>
+        <footer>
+          <button string="Save" type="object" name="action_save_name_changes" class="btn-primary"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_property_room_edit_wizard" model="ir.actions.act_window">
+    <field name="name">Edit Room</field>
+    <field name="res_model">property.room.edit.name.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+  </record>
+</odoo>

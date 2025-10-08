@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="ct_payment_tap.payment_provider_tap" model="payment.provider">
+        <field name="payment_method_ids"
+                   eval="[Command.link(ref('ct_payment_tap_direct.payment_method_tap_direct'))]"
+            />
+        <field name="inline_form_view_id" ref="ct_payment_tap_direct.inline_form"/>
+    </record>
+
+</odoo>

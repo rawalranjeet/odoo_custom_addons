@@ -1,0 +1,24 @@
+<odoo>
+  <record id="view_property_room_edit_notes_wizard_form" model="ir.ui.view">
+    <field name="name">property.room.edit.notes.wizard.form</field>
+    <field name="model">property.edit.notes.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Edit Notes">
+        <group>
+          <field name="notes"/>
+        </group>
+        <footer>
+          <button string="Save" type="object" name="action_save_notes_changes" class="btn-primary"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_property_room_edit_notes_wizard" model="ir.actions.act_window">
+    <field name="name">Edit Notes</field>
+    <field name="res_model">property.edit.notes.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+  </record>
+</odoo>

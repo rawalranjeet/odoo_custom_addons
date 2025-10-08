@@ -7,6 +7,17 @@ import pprint
 
 _logger = logging.getLogger("__name__")
 
+magento_to_odoo_order_state = {
+        'new': 'draft',
+        'pending_payment': 'sent',
+        'payment_review': 'sent',
+        'processing': 'sale',
+        'on_hold': 'sale',
+        'complete': 'sale',  
+        'closed': 'sale',  
+        'canceled': 'cancel'
+    }
+
 class MagentoOperationWizard(models.TransientModel):
     _name = "magento.operation.wizard"
     _description = "Magento Operation Wizard"
@@ -25,7 +36,7 @@ class MagentoOperationWizard(models.TransientModel):
     partner_id = fields.Many2one("res.partner")
     order_id = fields.Many2one("sale.order")
 
-
+    
 
     def action_confirm(self):
 
@@ -84,9 +95,6 @@ class MagentoOperationWizard(models.TransientModel):
             # raise UserError(f"Magento API Error: {(e.response.json().get('message', 'Unknown Magento API error')).replace('%1', e.response.json().get('parameters', [''])[0])}")
             raise UserError(f"An error occurred: {e}")
         
-        
-    
-
 
     # IMPORT <-------------
     def import_product_from_magento(self):
@@ -115,7 +123,7 @@ class MagentoOperationWizard(models.TransientModel):
 
             if not product_template:
                 new_product_added += 1
-                product_template = product_template.create({
+                product_template = product_template.with_context(from_magento_operation = True).create({
                     'name': item.get('name'),
                     'list_price': item.get('price'),
                     'is_storable': True,
@@ -124,17 +132,18 @@ class MagentoOperationWizard(models.TransientModel):
                     'magento_instance_id': self.magento_instance_id.id,
                     'magento_sku_id': item.get('sku'),
                     'sync_to_magento': True,
-                    'from_magento_operation': True,
-                })
+                    'magento_tax_class_id': next((attr.get('value') for attr in item.get('custom_attributes', []) if attr.get('attribute_code') == 'tax_class_id'), None) or False,
+                    })
             else:
 
-                product_template.write({
+                product_template.with_context(from_magento_operation = True).write({
                     'magento_instance_id': self.magento_instance_id.id,
                     'magento_sku_id': item.get('sku'),
-                    'from_magento_operation': True,
                     'sync_to_magento': True,
-                    'from_magento_operation': True,
-                })
+                    'magento_tax_class_id': next((attr.get('value') for attr in item.get('custom_attributes', []) if attr.get('attribute_code') == 'tax_class_id'), None) or False,
+                    'list_price': item.get('price'),
+                    'is_storable': True,
+                    })
 
             
         
@@ -160,24 +169,24 @@ class MagentoOperationWizard(models.TransientModel):
         new_order_added = 0
 
         for order in magento_orders:
+            
             sale_order = self.env['sale.order'].search([('magento_order_id', '=', order.get('entity_id')), ('magento_instance_id','=', self.magento_instance_id.id)])
             partner = self.env['res.partner'].search([('email', '=', order.get('customer_email')), ('magento_instance_id','=', self.magento_instance_id.id)])
             
-            # import pdb; pdb.set_trace()
-
             if not partner:
                 continue; 
             
             if not sale_order:
                 new_order_added += 1
-                sale_order = sale_order.create({
+                sale_order = sale_order.with_context(from_magento_operation = True).sudo().create({
                     'partner_id': partner.id,
                     'magento_order_id': order.get('entity_id'),
                     'magento_instance_id': self.magento_instance_id.id,
+                    'sync_to_magento': True,
                 })
 
             
-            
+            sale_order.state = magento_to_odoo_order_state[order.get('state')]
             items = order.get('items')
 
             for item in items:
@@ -197,12 +206,15 @@ class MagentoOperationWizard(models.TransientModel):
 
 
                     if not sale_order_line:
-                        account_tax = self.env['account.tax'].search([('amount','=',item.get('tax_percent'))], limit=1)
-                        if not account_tax:
-                            account_tax = account_tax.create({
-                                'name': f"{item.get('tax_percent')}%",
-                                'amount': item.get('tax_percent'),
-                            })
+                        account_tax = False
+                        if item.get('tax_percent') != 0:
+                            account_tax = self.env['account.tax'].search([('amount','=',item.get('tax_percent'))], limit=1)
+                            if not account_tax:
+                                account_tax = account_tax.create({
+                                    'name': f"{item.get('tax_percent')}%",
+                                    'amount': item.get('tax_percent'),
+                                })
+                        
 
                         sale_order_line = self.env['sale.order.line'].create({
                             'magento_order_id':  item.get('order_id'),
@@ -212,12 +224,88 @@ class MagentoOperationWizard(models.TransientModel):
                             'order_id': sale_order.id,
                             'product_uom_qty': item.get('qty_ordered'),
                             'price_unit': item.get('base_price'),
-                            'tax_id': False,
+                            'tax_id': [(4, account_tax.id)] if account_tax else False,
                         }) 
 
-                        sale_order_line.write({
-                            'tax_id': [(4, account_tax.id)]
+            # DISCOUNT PRICE
+            discount_amount = order.get('discount_amount')
+            if discount_amount != 0:
+                discount_product = self.env['product.product'].search([('default_code','=','MAGENTO_DISCOUNT_PRODUCT')], limit=1)
+                if not discount_product: 
+                    discount_product = self.env['product.product'].create({
+                        'name': 'Magento Discount Product',
+                        'sale_ok': False,
+                        'purchase_ok': False,
+                        'available_in_pos': False,
+                        'type': 'service',
+                        'lst_price': 0.0,
+                        'taxes_id': False,
+                        'default_code': 'MAGENTO_DISCOUNT_PRODUCT',
+                    })
+
+                discount_line = sale_order.order_line.filtered(lambda l: l.magento_discount)
+                if not discount_line: 
+                    self.env['sale.order.line'].create({
+                        'magento_order_id':  item.get('order_id'),
+                        'magento_instance_id': self.magento_instance_id.id,
+                        'magento_discount': True,
+                        'name': f'Discount',
+                        'order_id': sale_order.id,
+                        'price_unit': discount_amount,
+                        'tax_id': False,
+                        'product_id': discount_product.id,
+                    })
+                else:
+                    discount_line.write({
+                        'price_unit': discount_amount,
                         })
+
+
+            billing_address_partner = partner.child_ids.filtered(lambda p: p.type == 'invoice')
+            shipping_address_partner = partner.child_ids.filtered(lambda p: p.type == 'delivery')
+
+            if not billing_address_partner and not shipping_address_partner:
+                billing_address = order.get('billing_address')
+                partner.with_context(from_magento_operation = True).create({
+                    "name" : f"{billing_address.get('firstname')} {billing_address.get('lastname')}",
+                    "magento_instance_id": self.magento_instance_id.id,
+                    'phone': billing_address.get('telephone'),
+                    'parent_id': partner.id,
+                    'street': billing_address.get('street')[0],
+                    'street2': billing_address.get('street')[1] if len(billing_address.get('street'))>1 else '',
+                    'zip': billing_address.get('postcode'),
+                    'country_id': self.env['res.country'].search([('code', '=', billing_address.get('country_id'))]).id,
+                    'city': billing_address.get('city'),
+                    'state_id': self.env['res.country.state'].search([('code', '=', billing_address.get('region_code')), ('country_id','=', self.env['res.country'].search([('code', '=', billing_address.get('country_id'))]).id)]).id,
+                    'sync_to_magento': True,
+                    'type': 'invoice',
+                })
+                
+            # SHIPPING PRICE
+            shipping_amount = order.get('shipping_amount')
+            carrier_id = self.env['delivery.carrier'].search([('delivery_type', '=', 'fixed'), ('fixed_price','=',shipping_amount) ], limit=1)
+
+            if not carrier_id:
+                delivery_product = self.env['product.product'].create({
+                    'name': 'Flat Rate',
+                    'sale_ok': False,
+                    'purchase_ok': False,
+                    'available_in_pos': False,
+                    'type': 'service',
+                    'lst_price': shipping_amount,
+                    'taxes_id': False,
+                    'default_code': f'Delivery_Flate_Rate_{shipping_amount}',
+                })
+                carrier_id = self.env['delivery.carrier'].create({
+                    'name': f'Flat Rate {shipping_amount}',
+                    'delivery_type': 'fixed',
+                    'fixed_price': shipping_amount,
+                    'product_id': delivery_product.id,
+                })
+            
+            sale_order.set_delivery_line(carrier_id, shipping_amount)
+
+
 
         
         return {
@@ -270,16 +358,15 @@ class MagentoOperationWizard(models.TransientModel):
             vals.update({
                 'name': full_name,
                 'email': customer.get('email'),
-                'from_magento_operation': True,
             })
 
             if not res_partner:
                 new_customer_added += 1
-                res_partner = res_partner.create(vals)
+                res_partner = res_partner.with_context(from_magento_operation = True).create(vals)
 
             else:
 
-                res_partner.write(vals)
+                res_partner.with_context(from_magento_operation = True).write(vals)
 
             # adding addresses to the partner
             for address in addresses:
@@ -318,14 +405,13 @@ class MagentoOperationWizard(models.TransientModel):
                     'state_id': state.id if state else False,
                     'sync_to_magento': True,
                     'type': 'delivery' if address.get('default_shipping') else 'invoice' if address.get('default_billing') else 'other',
-                    'from_magento_operation': True,
                 }
 
 
                 if not child_partner:
-                    child_partner.create(child_vals)
+                    child_partner.with_context(from_magento_operation = True).create(child_vals)
                 else:
-                    child_partner.write(child_vals)
+                    child_partner.with_context(from_magento_operation = True).write(child_vals)
                 
             
         
@@ -450,236 +536,82 @@ class MagentoOperationWizard(models.TransientModel):
                         'sticky': False,
                     },
                 }
-        
+
 
     def export_orders_to_magento(self):
-        
-        if self.export_all:
-            orders = self.env['sale.order'].search([('magento_order_id','=',False), ('magento_instance_id','!=', self.magento_instance_id.id)])
-
-            if orders:
-                total_order_exported = 0
-                for order in orders:
-                    order_line = order.order_line
-                    if not order_line:
-                        continue;
-
-                    partner = order.partner_id
-
-
-                    first_name, middle_name, last_name = self.get_magento_name(partner.name)
-
-                    if not first_name or not last_name:
-                        continue;
-                    
-                    if not partner.phone or not partner.street or not partner.city or not partner.state_id or not partner.zip or not partner.country_code:
-                        continue;
-                        
-                    import pdb; pdb.set_trace()
-                    # Create a cart
-                    params = ''
-                    # cart_response = self.magento_make_request('/guest-carts', params,None , 'POST')
-                    cart_response = self.magento_make_request(f'/customers/{partner.magento_customer_id}/carts', params,None , 'POST')
-                    magento_cart_id = cart_response
-                    
-
-                    # Add items to cart
-                    total_product_added = 0
-                    for item in order_line:
-                        if not item.product_template_id.magento_sku_id:
-                            continue;
-                        total_product_added+=1
-                        item_payload = {
-                            "cartItem": {
-                                "sku": item.product_template_id.magento_sku_id,
-                                "qty": item.product_uom_qty,
-                                "quote_id": magento_cart_id,
-                            }
-                        }
-
-                        self.magento_make_request(f'/carts/{magento_cart_id}/items', params, item_payload, 'POST')
-                        # self.magento_make_request(f'/guest-carts/{magento_cart_id}/items', params, item_payload, 'POST')
-
-                    if total_product_added == 0:
-                        continue;
-                    
-                    shipping_address = {}
-                    billing_address = {}
-
-                    
-                    
-                    # shipping details
-                    shipping_payload = {
-                        "addressInformation": {
-                            "shipping_address": {
-                                "firstname": first_name,
-                                "middlename": middle_name,
-                                "lastname": last_name,
-                                "street": [partner.street, partner.street2],
-                                "city": partner.city,
-                                "region": partner.state_id.code,
-                                "postcode": partner.zip,
-                                "country_id": partner.country_code,
-                                "telephone": partner.phone,
-                                "email": partner.email,
-                            },
-                            "billing_address": {
-                                "firstname": first_name,
-                                "middlename": middle_name,
-                                "lastname": last_name,
-                                "street": [partner.street, partner.street2],
-                                "city": partner.city,
-                                "region": partner.state_id.code,
-                                "postcode": partner.zip,
-                                "country_id": partner.country_code,
-                                "telephone": partner.phone,
-                                "email": partner.email,
-                            },
-                            "shipping_method_code": "flatrate",
-                            "shipping_carrier_code": "flatrate"
-                        }
-                    }
-
-                   
-
-                    # response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/shipping-information', params, shipping_payload, 'POST')
-                    response = self.magento_make_request(f'/carts/{magento_cart_id}/shipping-information', params, shipping_payload, 'POST')
-
-                    # payment methods
-                    payment_payload = {
-                        "method": {
-                            "method": "checkmo"   # Payment method code
-                        }
-                    }
-
-                    # response = self.magento_make_request(f'/guest-carts/{magento_cart_id}/selected-payment-method', params, payment_payload, 'PUT')
-                    response = self.magento_make_request(f'/carts/{magento_cart_id}/selected-payment-method', params, payment_payload, 'PUT')
-                    
-
-                    # create an order
-                    magento_order_id = self.magento_make_request(f'/carts/{magento_cart_id}/order', params, None, 'PUT')
-                    # magento_order_id = self.magento_make_request(f'/guest-carts/{magento_cart_id}/order', params, None, 'PUT')
-
-                    order.write({
-                        'magento_order_id': magento_order_id,
-                        'magento_instance_id': self.magento_instance_id,
-                    })
+        if not self.export_all:
+            try:
+                result = self.magento_instance_id.magento_create_order(self.order_id)
+                
+                self.order_id.with_context(from_magento_operation = True).write({
+                    'magento_order_id': result.get('magento_order_id'),
+                    'magento_instance_id': self.magento_instance_id.id,
+                    'sync_to_magento': True,
+                })
 
                 return {
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
                     'params': {
-                        'title': _(f'Orders Export Success'),
-                        'message': _(f'Total : {total_order_exported}'),
+                        'title': _('Success'),
+                        'message': _('Order %s successfully exported to Magento.') % self.order_id.name,
                         'type': 'success',
                         'sticky': False,
                     },
                 }
-                    
+            except (UserError, Exception) as e:
+                _logger.error("Failed to export order %s: %s", self.order_id.name, e)
+                raise
 
-            else:
+        else:
+            orders_to_export = self.env['sale.order'].search([
+                ('magento_order_id', '=', False),
+            ])
 
+            if not orders_to_export:
                 return {
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
                     'params': {
-                        'title': _('Order Export Failed'),
-                        'message': "No order found to export",
-                        'type': 'danger',
+                        'title': _('No Orders Found'),
+                        'message': "There are no orders for this Magento instance to export.",
+                        'type': 'warning',
                         'sticky': False,
                     },
                 }
-
-            
-        else:
-            order_line = self.order_id.order_line
-            if not order_line:
-                raise UserError("Selected Order has no products added")
-
-            partner = self.order_id.partner_id
-
-            if not partner.magento_customer_id:
-                raise UserError("Selected Order's customer is not linked to any magento customer")
-            
-            # Create a cart
-            params = ''
-            import pdb; pdb.set_trace()
-            # cart_response = self.magento_make_request('/guest-carts', params,None , 'POST')
-            cart_response = self.magento_make_request(f'/customers/{partner.magento_customer_id}/carts', params,None , 'POST')
-            magento_cart_id = cart_response
-
-            # Add items to cart
-            for item in order_line:
-                item_payload = {
-                    "cartItem": {
-                        "sku": item.product_template_id.magento_sku_id,
-                        "qty": item.product_uom_qty,
-                        "quote_id": magento_cart_id,
-                    }
-                }
-
-                # self.magento_make_request(f'/guest-carts/{magento_cart_id}/items', params, item_payload, 'POST')
-                self.magento_make_request(f'/carts/{magento_cart_id}/items', params, item_payload, 'POST')
-
-            # shipping details\
-            partner = self.order_id.partner_id
-
-            first_name, middle_name, last_name = self.get_magento_name(partner.name)
-
-            if not first_name or not last_name:
-                raise UserError("customer name is incomplete")
+                
+            exported_count = 0
+            failed_orders = []
+            for order in orders_to_export:
+                try:
+                    result = self.magento_instance_id.magento_create_order(order)
+                    order.with_context(from_magento_operation = True).write({
+                        'magento_order_id': result.get('magento_order_id'),
+                        'magento_instance_id': self.magento_instance_id.id,
+                        'sync_to_magento': True,
+                    })
+                    exported_count += 1
+                except Exception as e:
+                    _logger.error("Failed to export order %s to Magento: %s", order.name, e)
+                    failed_orders.append(f"{order.name}: {e}")
         
+            message = _('%s orders exported successfully.') % exported_count
+            notif_type = 'success'
+            if failed_orders:
+                failed_message = '\n'.join(failed_orders)
+                message += _('\n\n%s orders failed to export:\n%s') % (len(failed_orders), failed_message)
+                notif_type = 'warning' if exported_count > 0 else 'danger'
 
-            shipping_payload = {
-                "addressInformation": {
-                    "shipping_address": {
-                        "firstname": first_name,
-                        "middlename": middle_name,
-                        "lastname": last_name,
-                        "street": [partner.street, partner.street2],
-                        "city": partner.city,
-                        "region": partner.state_id.code,
-                        "postcode": partner.zip,
-                        "country_id": partner.country_code,
-                        "telephone": partner.phone,
-                        "email": partner.email,
-                    },
-                    "billing_address": {
-                        "firstname": first_name,
-                        "middlename": middle_name,
-                        "lastname": last_name,
-                        "street": [partner.street, partner.street2],
-                        "city": partner.city,
-                        "region": partner.state_id.code,
-                        "postcode": partner.zip,
-                        "country_id": partner.country_code,
-                        "telephone": partner.phone,
-                        "email": partner.email,
-                    },
-                    "shipping_method_code": "flatrate",
-                    "shipping_carrier_code": "flatrate"
-                }
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Bulk Export Complete'),
+                    'message': message,
+                    'type': notif_type,
+                    'sticky': False,
+                },
             }
-
-            response = self.magento_make_request(f'/carts/{magento_cart_id}/shipping-information', params, shipping_payload, 'POST')
-
-            # payment methods
-            payment_payload = {
-                "method": {
-                    "method": "checkmo"   # Payment method code
-                }
-            }
-
-            response = self.magento_make_request(f'/carts/{magento_cart_id}/selected-payment-method', params, payment_payload, 'PUT')
-            
-
-            # create an order
-            magento_order_id = self.magento_make_request(f'/carts/{magento_cart_id}/order', params, None, 'PUT')
-
-            self.order_id.write({
-                'magento_order_id': magento_order_id,
-                'magento_instance_id': self.magento_instance_id,
-            })
 
 
     def export_customers_to_magento(self):
@@ -689,14 +621,11 @@ class MagentoOperationWizard(models.TransientModel):
                 ('magento_customer_id','=',False), 
                 ('magento_address_id','=',False), 
                 ('email', '!=', False),
-                ('dob', '!=', False),
-                ('gender', '!=', False),
                 ])
             
             
 
             if res_partners:
-                params = ''
                 total_customer_exported = 0
 
                 for partner in res_partners: 
@@ -712,63 +641,13 @@ class MagentoOperationWizard(models.TransientModel):
                         continue;
                     
 
-                    total_customer_exported += 1
-
-                    first_name, middle_name, last_name = self.get_magento_name(partner.name)
-
-                    if not first_name or not last_name:
-                        continue;
-
-                    addresses = []
-
-                    for child_partner in partner.child_ids:
-
-                        child_first_name, child_middle_name, child_last_name = self.get_magento_name(child_partner.name)
-
-                        if not child_first_name or not child_last_name or not child_partner.phone or not child_partner.street or not child_partner.city or not child_partner.zip or not child_partner.country_id:
-                            continue;
-
-                        address = {
-                                "firstname": child_first_name,
-                                "middlename": child_middle_name,
-                                "lastname": child_last_name,
-                                "street": [child_partner.street, child_partner.street2],
-                                "city": child_partner.city,
-                                "postcode": child_partner.zip,
-                                "telephone": child_partner.phone,
-                                "country_id": child_partner.country_code,
-                                "region": {
-                                    "region_code": child_partner.state_id.code,
-                                    "region": child_partner.state_id.name,
-                                } if child_partner.state_id else {},
-                                "default_shipping": True if child_partner.type == 'delivery' else False,
-                                "default_billing": True if child_partner.type == 'invoice' else False,
-                            }
-                        
-                        addresses.append(address)
-
-                    payload = {
-                        "customer": {
-                            "email": partner.email,
-                            "firstname": first_name,
-                            "middlename": middle_name,
-                            "lastname": last_name,
-                            "gender": 1 if partner.gender == 'male' else 2 if partner.gender == 'female' else 3,
-                            "dob" : partner.dob.strftime("%Y-%m-%d") if partner.dob else None,
-                            "addresses": addresses,
-                        }
-                    }
-
+                    total_customer_exported += 1                    
+                    response = self.magento_instance_id.magento_create_customer(partner)
                     
-
-                    response = self.magento_make_request('/customers', params, payload, 'POST')
-                    
-
-                    partner.write({
+                    partner.with_context(from_magento_operation = True).write({
                         'magento_customer_id': response.get('id'),
                         'magento_instance_id': self.magento_instance_id.id,
                         'sync_to_magento': True,
-                        'from_magento_operation': True,
                     })
 
                 return {
@@ -796,62 +675,23 @@ class MagentoOperationWizard(models.TransientModel):
                 }
 
         else:
-
-            params = ''
-
-            first_name, middle_name, last_name = self.get_magento_name(self.partner_id.name)
-
-            if not first_name or not last_name:
-                raise UserError("Customer name is incomplete")
-            
-            addresses = []
-
-            for child_partner in self.partner_id.child_ids:
-
-                child_first_name, child_middle_name, child_last_name = self.get_magento_name(child_partner.name)
-
-                if not child_first_name or not child_last_name or not child_partner.phone or not child_partner.street or not child_partner.city or not child_partner.zip or not child_partner.country_id:
-                    continue;
-
-                address = {
-                        "firstname": child_first_name,
-                        "middlename": child_middle_name,
-                        "lastname": child_last_name,
-                        "street": [child_partner.street, child_partner.street2],
-                        "city": child_partner.city,
-                        "postcode": child_partner.zip,
-                        "telephone": child_partner.phone,
-                        "country_id": child_partner.country_code,
-                        "region": {
-                            "region_code": child_partner.state_id.code,
-                            "region": child_partner.state_id.name,
-                        } if child_partner.state_id else {},
-                        "default_shipping": True if child_partner.type == 'delivery' else False,
-                        "default_billing": True if child_partner.type == 'invoice' else False,
+            params = {
+                        "searchCriteria[filter_groups][0][filters][0][field]":"email",
+                        "searchCriteria[filter_groups][0][filters][0][value]": self.partner_id.email,
+                        "searchCriteria[filter_groups][0][filters][0][condition_type]": "eq"
                     }
-                
-                addresses.append(address)
+            customer = self.magento_make_request('/customers/search', params)
+            
+            if customer.get('items'):
+                raise UserError("Customer with this email already exists in Magento")
 
-            payload = {
-                "customer": {
-                    "email": self.partner_id.email,
-                    "firstname": first_name,
-                    "middlename": middle_name,
-                    "lastname": last_name,
-                    "gender": 1 if self.partner_id.gender == 'male' else 2 if self.partner_id.gender == 'female' else 3,
-                    "dob" : self.partner_id.dob.strftime("%Y-%m-%d") if self.partner_id.dob else None,
-                    "addresses": addresses,
-                }
-            }
-
-            response = self.magento_make_request('/customers',params, payload, 'POST')
+            response = self.magento_instance_id.magento_create_customer(self.partner_id)
 
             if response: 
-                self.partner_id.write({
+                self.partner_id.with_context(from_magento_operation = True).write({
                     'magento_customer_id': response.get('id'),
                     'magento_instance_id': self.magento_instance_id.id,
                     'sync_to_magento': True,
-                    'from_magento_operation': True,
                 })
 
             
@@ -866,7 +706,6 @@ class MagentoOperationWizard(models.TransientModel):
                     },
                 }
         
-
 
 
     # Helper function

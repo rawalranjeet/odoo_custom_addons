@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_account_payment_register_form_inherit_payment_tap" model="ir.ui.view">
+        <field name="name">account.payment.register.form.inherit.payment.tap</field>
+        <field name="model">account.payment.register</field>
+        <field name="inherit_id" ref="account.view_account_payment_register_form"/>
+        <field name="arch" type="xml">
+            <field name="payment_token_id" position="attributes">
+                <attribute name="invisible">not use_electronic_payment_method or not can_edit_wizard or (can_group_payments and not group_payment) or not show_payment_token_id</attribute>
+            </field>   
+        </field>
+    </record>
+</odoo>

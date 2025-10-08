@@ -1,0 +1,143 @@
+<odoo>
+  <record id="view_tree_property_preparation" model="ir.ui.view">
+    <field name="name">property.preparation.tree</field>
+    <field name="model">property.preparation</field>
+    <field name="arch" type="xml">
+      <list string="Preparation">
+        <field name="name"/>
+        <field name="preparation_type"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_form_property_preparation" model="ir.ui.view">
+    <field name="name">property.preparation.form</field>
+    <field name="model">property.preparation</field>
+    <field name="arch" type="xml">
+      <form string="Preparation">
+        <group>
+          <field name="name"/>
+          <field name="preparation_type"/>
+<!--          <field name="min"/>-->
+<!--          <field name="max"/>-->
+          <field name="component_type" widget="many2many_tags"/>
+          <field name="unit"/>
+          <field name="unit_type" invisible="preparation_type != 'count'"/>
+          <field name="feet" invisible="preparation_type != 'linear'"/>
+          <field name="sqft" invisible="preparation_type != 'sqft'"/>
+          <field name="default"/>
+<!--          <field name="note"/>-->
+<!--          <field name="int_note"/>-->
+          <field name="attachment_ids" invisible="1"/>
+        </group>
+      </form>
+    </field>
+  </record>
+  <record id="view_property_preparation_kanban" model="ir.ui.view">
+    <field name="name">property.preparation.kanban</field>
+    <field name="model">property.preparation</field>
+    <field name="arch" type="xml">
+      <kanban class="o_kanban_mobile" action="" type="object">
+        <field name="name"/>
+        <field name="component_name_char" invisible="1"/>
+        <field name="preparation_type"/>
+<!--        <field name="min"/>-->
+<!--        <field name="max"/>-->
+        <field name="quantity"/>
+        <field name="unit_type"/>
+        <field name="unit"/>
+        <field name="default"/>
+        <field name="is_added"/>
+        <field name="attachment_ids"/>
+        <templates>
+          <t t-name="kanban-box">
+            <t t-set="is_added" t-value="record.is_added.raw_value"/>
+
+            <t t-if="is_added">
+              <div class="oe_kanban_card o_kanban_record">
+                <div class="d-flex justify-content-between">
+                  <strong><field name="name"/></strong>
+                  <button type="object" name="action_upload_attachment">
+                    <field name="com_preparation_line_id" invisible="1"/>
+                    <field name="attachment_ids" widget="kanban_attachment_uploader"/>
+                  </button>
+                  <button class="btn btn-success btn-sm" disabled="1">
+                    <i class="fa fa-check"/> Added
+                  </button>
+                </div>
+                <div style="margin-top: 10px;">
+                  <!-- Quantity -->
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold me-2">Quantity</span>
+                    <div class="input-group" style="width: 120px;">
+                      <button type="object" name="action_decrease_quantity" class="btn btn-dark fw-bold btn-purple">−</button>
+                      <span class="form-control text-center border-dark bg-light fw-bold">
+                        <field name="quantity"/>
+                      </span>
+                      <button type="object" name="action_increase_quantity" class="btn btn-dark fw-bold btn-purple">＋</button>
+                    </div>
+                  </div>
+                  <br/>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <t t-if="record.preparation_type.raw_value == 'linear'">
+                      <span class="fw-bold me-2">Feet</span>
+                      <div class="input-group" style="width: 120px;">
+                        <button type="object" name="decrease_feet" class="btn btn-dark fw-bold btn-purple">−</button>
+                        <span class="form-control text-center border-dark bg-light fw-bold">
+                          <field name="feet"/>
+                        </span>
+                        <button type="object" name="increase_feet" class="btn btn-dark fw-bold btn-purple">＋</button>
+                      </div>
+                    </t>
+                    <t t-elif="record.preparation_type.raw_value == 'sqft'">
+                      <span class="fw-bold me-2">Sqft</span>
+                      <div class="input-group" style="width: 120px;">
+                        <button type="object" name="decrease_sqft" class="btn btn-dark fw-bold btn-purple">−</button>
+                        <span class="form-control text-center border-dark bg-light fw-bold">
+                          <field name="sqft"/>
+                        </span>
+                        <button type="object" name="increase_sqft" class="btn btn-dark fw-bold btn-purple">＋</button>
+                      </div>
+                    </t>
+                    <t t-elif="record.preparation_type.raw_value == 'count'">
+                      <span class="fw-bold me-2">Unit</span>
+                      <div class="input-group" style="width: 120px;">
+                        <button type="object" name="decrease_unit" class="btn btn-dark fw-bold btn-purple">−</button>
+                        <span class="form-control text-center border-dark bg-light fw-bold">
+                          <field name="unit_type"/>
+                        </span>
+                        <button type="object" name="increase_unit" class="btn btn-dark fw-bold btn-purple">＋</button>
+                      </div>
+                    </t>
+                  </div>
+                </div>
+              </div>
+            </t>
+
+            <t t-else="">
+              <div class="oe_kanban_card o_kanban_record">
+                <div class="d-flex justify-content-between">
+                  <strong><field name="name"/></strong>
+                  <button type="object" name="add_preparation" class="btn btn-primary btn-sm">
+                    <i class="fa fa-plus"/> Add
+                  </button>
+                </div>
+              </div>
+            </t>
+          </t>
+        </templates>
+      </kanban>
+    </field>
+  </record>
+
+  <record id="action_property_preparation" model="ir.actions.act_window">
+    <field name="name">Preparation</field>
+    <field name="res_model">property.preparation</field>
+    <field name="view_mode">list,form</field>
+    <field name="view_id" ref="view_property_preparation_kanban"/>
+  </record>
+
+  <menuitem id="menu_property_preparation" name="Preparation" parent="menu_property_configuration" action="action_property_preparation" sequence="3"/>
+
+</odoo>
+

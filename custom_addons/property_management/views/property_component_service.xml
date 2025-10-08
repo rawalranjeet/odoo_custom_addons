@@ -1,0 +1,50 @@
+<odoo>
+  <record id="view_tree_property_component_service" model="ir.ui.view">
+    <field name="name">property.component.service.tree</field>
+    <field name="model">property.component.service</field>
+    <field name="arch" type="xml">
+      <list string="Components Service">
+        <field name="order_id"/>
+        <field name="property_id"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_form_property_component_service" model="ir.ui.view">
+    <field name="name">property.component.service.form</field>
+    <field name="model">property.component.service</field>
+    <field name="arch" type="xml">
+      <form string="Component">
+        <sheet>
+          <group>
+            <field name="order_id" invisible="1"/>
+            <field name="property_id" invisible="1"/>
+            <field name="from_component" invisible="1"/>
+            <!-- <field name="component_ids" widget="many2many_tags" readonly="1"/> -->
+            <field name="component_id" class="radio_style" widget="radio" readonly="from_component"/>
+            <!-- <field name="property_room_ids" widget="many2many_tags" readonly="1"/> -->
+            <field name="room_ids" class="checkboxes_style" widget="many2many_checkboxes" readonly="from_component"/>
+            <field name="service_id"/>
+            <field name="sheen_id" invisible="not service_id"/>
+            <field name="color_id" invisible="not service_id"/>
+            <field name="coats" />
+            <field name="primer_id" />
+            <field name="primer_coats" />
+<!--            <field name="note" />-->
+<!--            <field name="int_note" />-->
+          </group>
+        </sheet>
+        <footer>
+          <button name="add_to_sale_order" string="Save" type="object" class="oe_highlight" invisible="is_added_to_order" />
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_property_component_service" model="ir.actions.act_window">
+    <field name="name">Components Service</field>
+    <field name="res_model">property.component.service</field>
+    <field name="view_mode">list,form</field>
+  </record>
+
+</odoo>

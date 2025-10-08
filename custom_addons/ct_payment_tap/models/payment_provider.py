@@ -30,18 +30,6 @@ class PaymentProviderTap(models.Model):
         default = True
     )
 
-    tap_payment_flow_type = fields.Selection(
-        [
-            ('redirect', 'Redirect'),
-            ('direct', 'Direct')
-        ],
-        string='Payment Flow Type',
-        default='redirect',
-        required=True,
-        help="Choose how the customer will complete their payment."
-    )
-
-
     def _compute_feature_support_fields(self):
         """ Override of `payment` to enable additional features. """
         super()._compute_feature_support_fields()
@@ -76,7 +64,6 @@ class PaymentProviderTap(models.Model):
             
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            # import pdb; pdb.set_trace()
             _logger.exception("Invalid API request at %s with data:\n%s", url, pprint.pformat(payload))
             raise ValidationError("Tap: " + _(e.response.json().get('errors')[0].get('description')))
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
@@ -85,13 +72,3 @@ class PaymentProviderTap(models.Model):
 
         
         return response.json()
-
-    def _tap_get_inline_form_values(self, **kwargs):
-        """
-        Return a serialized JSON of the required values to render the inline form.
-        """
-        self.ensure_one()
-        return json.dumps({
-            'publishable_key': self.tap_publishable_key,
-            'tap_payment_flow_type': self.tap_payment_flow_type
-        })

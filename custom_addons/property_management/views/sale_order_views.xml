@@ -1,0 +1,218 @@
+<odoo>
+    <record id="sale_order_form_inherit_property" model="ir.ui.view">
+        <field name="name">sale.order.inherit.property</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="property_id" context="{'no_open' : True, 'default_partner_id': partner_id, 'form_view_ref' : 'property_management.property_property_view_form_simplified' }" />
+            </xpath>
+            <xpath expr="//header" position="inside">
+<!--                <button name="action_create_property" type="object" class="oe_highlight" string="Create Property"/>-->
+<!--                <button name="action_open_property" type="object" class="oe_highlight" string="Open Property"/>-->
+                <button name="action_manage_property" type="object" class="oe_highlight" string="Manage Property" display="always"/>
+                <button name="action_open_survey" type="object" class="oe_highlight" string="Open Survey" display="always"/>
+                <!-- <button name="add_component_services" type="object" class="oe_highlight" string="Add Services"/> -->
+            </xpath>
+            <xpath expr="//sheet" position="before">
+                <div class="mobile-custom-buttons">
+                    <button name="action_manage_property" type="object" class="btn btn-secondary o-icon-button fa fa-home o_form_button oe_highlight"/>
+                    <button name="action_open_survey" type="object" class="btn btn-secondary o-icon-button fa fa-file o_form_button oe_highlight" />
+                </div>
+            </xpath>
+            <xpath expr="//form/sheet/notebook/page[@name='customer_signature']" position="after">
+                <page string="Quotation Requirements">
+                    <field name="component_order_line_ids" mode="list,kanban" readonly="1" widget="section_and_note_one2many">
+                        <list>
+                            <field name="display_type" invisible="1"/>
+                            <field name="name"/>
+                            <field name="sequence" widget="handle"/>
+                            <field name="rooms"
+                                   attrs="{'invisible': [('display_type', '!=', False)]}"/>
+                            <field name="component_id"
+                                   attrs="{'invisible': [('display_type', '!=', False)]}"
+                                   options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
+                            <field name="paint_product_id"
+                                   attrs="{'invisible': [('display_type', '!=', False)]}"/>
+                            <field name="sheen_id"
+                                   attrs="{'invisible': [('display_type', '!=', False)]}"/>
+                            <field name="color_id"
+                                   attrs="{'invisible': [('display_type', '!=', False)]}"/>
+                            <field name="primer_product_id"
+                                   attrs="{'invisible': [('display_type', '!=', False)]}"/>
+                            <field name="coats"
+                                   attrs="{'invisible': [('display_type', '!=', False)]}"/>
+                            <field name="primer_coats"
+                                   attrs="{'invisible': [('display_type', '!=', False)]}"/>
+                        </list>
+                        <kanban class="o_kanban_small_column">
+                            <field name="component_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
+                            <field name="service_id"/>
+                            <field name="primer_product_id"/>
+                            <field name="paint_product_id"/>
+                            <field name="paint_layers"/>
+                            <templates>
+                                <t t-name="kanban-box">
+                                    <div class="o_kanban_record card" style="border: 1px solid #ccc; border-radius: 6px; padding: 8px; margin: 4px; background-color: #f9f9f9;">
+                                        <div class="o_kanban_details">
+                                        <div style="font-weight: bold; font-size: 14px; color: #1A73E8;">
+                                            <field name="component_id"/>
+                                        </div>
+                                        <div>
+                                            <strong>Service:</strong> <field name="service_id"/>
+                                        </div>
+                                        <div t-if="record.primer_product_id.value">
+                                            <strong>Primer:</strong> <field name="primer_product_id"/>
+                                        </div>
+                                        <div t-if="record.paint_product_id.value">
+                                            <strong>Paint:</strong> <field name="paint_product_id"/>
+                                        </div>
+                                        <div>
+                                            <strong>Layers:</strong> <field name="paint_layers"/>
+                                        </div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </templates>
+                        </kanban>
+                        <form string="Quotation Requirements">
+                            <group>
+                                <group>
+                                    <field name="component_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
+                                    <field name="service_id" />
+                                </group>
+                                <group>
+                                    <field name="primer_product_id" />
+                                    <field name="paint_product_id" />
+                                </group>
+                                <group>
+                                    <field name="paint_layers" />
+                                </group>
+                            </group>
+                        </form>
+                    </field>
+                </page>
+                <page string="Survey Record">
+                    <field name="survey_response_line_ids" mode="list,kanban">
+                        <list create="0" editable="bottom">
+                            <field name="question_id" readonly="True"/>
+                            <field name="question_type" column_invisible="1"/>
+                            <field name="display_name" string="Answer" column_invisible="1"/>
+                            <field name="char_answer" readonly="question_type not in ['text_box','char_box','numerical_box','scale','date','datetime']"/>
+                            <field name="answer_id"
+                                readonly="question_type != 'simple_choice'"/>
+                            <field name="answer_ids"
+                                widget="many2many_tags"
+                                readonly="question_type != 'multiple_choice'"/>
+                            <field name="choice_options" readonly="1" column_invisible="1"/>
+                        </list>
+                        <kanban class="o_kanban_small_column">
+                           <field name="question_id"/>
+                            <field name="display_name" />
+                            <templates>
+                                <t t-name="kanban-box">
+                                    <div class="o_kanban_record card" style="border: 1px solid #ccc; border-radius: 6px; padding: 8px; margin: 4px; background-color: #f9f9f9;">
+                                        <div class="o_kanban_details">
+                                            <div style="font-weight: bold; font-size: 14px;">
+                                                <field name="question_id"/>
+                                            </div>
+                                            <div>
+                                                <strong>Answer:</strong> <field name="display_name" />
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </templates>
+                        </kanban>
+                    </field>
+                </page>
+                <page string="Preparation Tab">
+                    <field name="preparation_line_ids" mode="list,kanban">
+                        <list>
+                            <field name="name" readonly="True" string="Components"/>
+                            <field name="preparation_ids" widget="many2many_tags"/>
+                        </list>
+                        <kanban class="o_kanban_small_column">
+                           <field name="name"/>
+                            <field name="preparation_ids" />
+                            <templates>
+                                <t t-name="kanban-box">
+                                    <div class="o_kanban_record card" style="border: 1px solid #ccc; border-radius: 6px; padding: 8px; margin: 4px; background-color: #f9f9f9;">
+                                        <div class="o_kanban_details">
+                                            <div style="font-weight: bold; font-size: 14px;">
+                                                <field name="name"/>
+                                            </div>
+                                            <div>
+                                                <strong>Preparation:</strong> <field name="preparation_ids" />
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </templates>
+                        </kanban>
+                    </field>
+                </page>
+                <page string="Attachments">
+                    <field name="attachment_ids" mode="list,kanban">
+                        <list create="0" >
+                            <field name="attachment_type" readonly="True" string="Type"/>
+                            <field name="room_name" string="Room"/>
+                            <field name="prep_name" string="Preparation"/>
+                            <field name="attachment_ids" string="Attachment" widget="many2many_tags"/>
+                        </list>
+                        <kanban class="o_kanban_small_column">
+                           <field name="attachment_type"/>
+                           <field name="room_name"/>
+                           <field name="prep_name"/>
+                            <field name="attachment_ids" />
+                            <templates>
+                                <t t-name="kanban-box">
+                                    <div class="o_kanban_record card" style="border: 1px solid #ccc; border-radius: 6px; padding: 8px; margin: 4px; background-color: #f9f9f9;">
+                                        <div class="o_kanban_details">
+                                            <div>
+                                                <strong>Type:</strong> <field name="attachment_type"/><br></br>
+                                                <strong>Rooms:</strong> <field name="room_name"/><br></br>
+                                                <strong>Preparation:</strong> <field name="prep_name"/><br></br>
+                                                <strong>Attachment:</strong> <field name="attachment_ids" widget="many2many_tags" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </templates>
+                        </kanban>
+                    </field>
+                </page>
+                <page string="Job Summary">
+                    <div style="width: 100%;">
+                        <field name="job_summary" nolabel="1" placeholder="Enter job summary..." style="width: 100%;" />
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+    <record id="sale_order_template_form_inherit" model="ir.ui.view">
+        <field name="name">sale.order.template.inherit.property</field>
+        <field name="model">sale.order.template</field>
+        <field name="inherit_id" ref="sale_management.sale_order_template_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='journal_id']" position="after">
+                <field name="survey_id" />
+            </xpath>
+        </field>
+    </record>
+    <record id="view_sale_order_attachment_form" model="ir.ui.view">
+        <field name="name">sale.order.attachment.form</field>
+        <field name="model">sale.order.attachment</field>
+        <field name="arch" type="xml">
+            <form string="Sale Order Attachment">
+                <sheet>
+                    <group>
+                        <field name="attachment_ids" widget="many2many_binary_preview" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

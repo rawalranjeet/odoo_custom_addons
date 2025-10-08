@@ -49,45 +49,38 @@ class PaymentTransactionTap(models.Model):
         res = super()._get_specific_rendering_values(processing_values)
         if self.provider_code != 'tap':
             return res
+            
+        base_url = self.provider_id.get_base_url()
+        return_url = urls.url_join(base_url, '/payment/tap/return')
+        webhook_url = urls.url_join(base_url, '/payment/tap/webhook')
         
 
-        if self.payment_method_id.code == 'tap_direct':
-            # res['tap_publishable_key'] = self.provider_id.tap_publishable_key
-            return res
+        payload = {
+            'amount': self.amount,
+            'currency': self.currency_id.name,
+            'customer_initiated': True,
+            'save_card': self.tokenize,
+            'description': self.reference,
+            'reference': {'transaction': self.reference, 'order': self.reference},
+            'customer': {'first_name': self.partner_name, 'email': self.partner_email},
+            'source': {'id': 'src_all'},
+            'redirect': {'url': return_url},
+            'post': {'url': webhook_url}
+        }
+
+        response_data = self.provider_id._tap_make_request('charges', payload=payload, method='POST')
+        redirect_url = response_data.get('transaction', {}).get('url')
+
+        if not redirect_url:
+            raise ValidationError(_("Tap payment service returned an invalid response."))
         
-        else: # Redirect flow
-            
-            base_url = self.provider_id.get_base_url()
-            return_url = urls.url_join(base_url, '/payment/tap/return')
-            webhook_url = urls.url_join(base_url, '/payment/tap/webhook')
-            
+        self.provider_reference = response_data.get('id')
 
-            payload = {
-                'amount': self.amount,
-                'currency': self.currency_id.name,
-                'customer_initiated': True,
-                'save_card': self.tokenize,
-                'description': self.reference,
-                'reference': {'transaction': self.reference, 'order': self.reference},
-                'customer': {'first_name': self.partner_name, 'email': self.partner_email},
-                'source': {'id': 'src_all'},
-                'redirect': {'url': return_url},
-                'post': {'url': webhook_url}
-            }
+        parsed_url = urls.url_parse(redirect_url)
+        params = dict(parsed_url.decode_query())
+        base_redirect_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
 
-            response_data = self.provider_id._tap_make_request('charges', payload=payload, method='POST')
-            redirect_url = response_data.get('transaction', {}).get('url')
-
-            if not redirect_url:
-                raise ValidationError(_("Tap payment service returned an invalid response."))
-            
-            self.provider_reference = response_data.get('id')
-
-            parsed_url = urls.url_parse(redirect_url)
-            params = dict(parsed_url.decode_query())
-            base_redirect_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
-
-            return {'api_url': base_redirect_url, 'url_params': params}
+        return {'api_url': base_redirect_url, 'url_params': params}
         
 
     # for token payment request
@@ -103,7 +96,7 @@ class PaymentTransactionTap(models.Model):
         if self.provider_code != 'tap':
             return
 
-        # Prepare the payment request to Flutterwave.
+        # Prepare the payment request to Tap.
         if not self.token_id:
             raise UserError("Tap: " + _("The transaction is not linked to a token."))
 
@@ -131,10 +124,13 @@ class PaymentTransactionTap(models.Model):
 
         verified_data = self.provider_id._tap_make_request(f'charges/{charge_id}', method='GET')
 
+       
         status = verified_data.get('status')
         
         #update the provider_reference
         self.provider_reference = verified_data.get('id')
+        if verified_data.get('save_card') == True:
+            self.tokenize = True
 
 
         if status == 'CAPTURED':
@@ -222,39 +218,3 @@ class PaymentTransactionTap(models.Model):
             ('tap_3ds_auth_url', 'ilike', 'https'),
         ])
     
-
-
-    # direct payment
-    def _tap_create_charge_from_token(self, token_id):
-        self.ensure_one()
-        payload = {
-            'amount': self.amount,
-            'currency': self.currency_id.name,
-            'customer_initiated': True,
-            'save_card': self.tokenize,
-            'description': self.reference,
-            'reference': {'transaction': self.reference, 'order': self.reference},
-            'customer': {'first_name': self.partner_name, 'email': self.partner_email},
-            'source': {'id': token_id},
-            'redirect': {'url': self.get_base_url() + '/payment/tap/return'}
-        }
-        response_data = self.provider_id._tap_make_request('charges', payload=payload, method='POST')
-
-        self.provider_reference = response_data.get('id')
-
-        self._process_notification_data(response_data)
-
-        if response_data.get('status') == 'INITIATED' and response_data.get('transaction', {}).get('url'):
-            return {'three_ds_redirect_url': response_data['transaction']['url']}
-        return {}
-    
-
-    # def action_tap_3ds_verification(self):
-    #     url = self.tap_3ds_auth_url
-    #     if url:
-
-    #         return {
-    #             'type': 'ir.actions.act_url',
-    #             'url': url,
-    #             'target': 'self',
-    #         }

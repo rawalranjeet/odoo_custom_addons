@@ -13,6 +13,7 @@
                         <field name="magento_instance_id" invisible = "not sync_to_magento" required = "sync_to_magento"/>
 
                         <field name="magento_order_id" invisible = "not sync_to_magento"/>
+                        <field name="magento_cart_id" invisible = "not sync_to_magento"/>
                     </group>
                     
                 </page>

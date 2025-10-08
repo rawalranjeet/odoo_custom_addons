@@ -18,7 +18,6 @@
 
             <group name="provider_config" position="inside">
                 <group name="tap_config" string="Tap Configuration">
-                    <field name="tap_payment_flow_type" widget="radio"/>
                     <field name="tap_3ds_verification" />
                 </group>
             </group>

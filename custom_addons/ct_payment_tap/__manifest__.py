@@ -1,24 +1,25 @@
+# -*- coding: utf-8 -*-
 {
     'name':'Payment Provider: Tap',
+    'version': '18.0.1.0.0',
     'category': 'Accounting/Payment Providers',
     'summary': 'Connects Tap payment gateway to Odoo for reliable and convenient payment transactions.',
     'description':"""Tap payment gateway integration for Odoo, offering smooth and secure online payment solutions.""",
-    'author': 'Ranjeet Rawal',
+    'author': 'CodeTrade India Pvt Ltd',
+    'company': 'CodeTrade India Pvt Ltd',
+    'maintainer': 'CodeTrade India Pvt Ltd',
     'website': 'https://www.codetrade.io',
-    'version': '18.0.1.0',
-    'depends': ['payment','account','website'],
+    'depends': ['payment','account','website_sale', 'contacts'],
     'data': [
        'views/payment_provider_views.xml',
        'views/payment_tap_template.xml',
        'data/payment_method_data.xml',
        'data/payment_provider_data.xml',
-       'data/service_cron.xml',
     ],
-    'assets':{
-        'web.assets_frontend':[
-            'ct_payment_tap/static/src/js/payment_form.js',
-        ],
-    },
     'post_init_hook': 'post_init_hook',
     'uninstall_hook': 'uninstall_hook',
+    'license': 'LGPL-3',
+    'installable': True,
+    'auto_install': False,
+    'application': True,
 }

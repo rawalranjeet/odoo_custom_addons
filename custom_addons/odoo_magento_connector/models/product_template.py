@@ -7,21 +7,23 @@ class ProductTemplate(models.Model):
 
     magento_instance_id = fields.Many2one("magento.instance")
     magento_sku_id = fields.Char()
+    magento_tax_class_id = fields.Integer()
 
     sync_to_magento = fields.Boolean()
 
 
     def write(self, vals):
-        
-        if vals.get('from_magento_operation'):
-            del vals['from_magento_operation']
 
-            return super(ProductTemplate, self).write(vals)
         
-
         res = super(ProductTemplate, self).write(vals)
-
+    
+        if self.env.context.get('from_magento_operation'):
+            return res
+        
+        
         for product_template in self:
+            
+            
             if product_template.magento_sku_id and product_template.magento_instance_id:
                 result = product_template.magento_instance_id.magento_update_product(product_template, vals)
                 if not result:
@@ -33,9 +35,8 @@ class ProductTemplate(models.Model):
                 if not result:
                     raise UserError("Failed to create product in Magento")
 
-                product_template.write({
+                product_template.with_context(from_magento_operation = True).write({
                     'magento_sku_id': result.get('sku'),
-                    'from_magento_operation': True,
                 })
                 
 
@@ -43,25 +44,17 @@ class ProductTemplate(models.Model):
     
     @api.model_create_multi
     def create(self, vals_list):
-        from_magento_operation = False
-
-        for vals in vals_list:
-            if vals.get('from_magento_operation'):
-                from_magento_operation = True
-                del vals['from_magento_operation']
-
 
         products = super().create(vals_list)
 
-        if not from_magento_operation:
+        if not self.env.context.get('from_magento_operation'):
 
             for product in products:
                 if product.sync_to_magento:
                     result = product.magento_instance_id.magento_create_product(product)
 
-                    product.write({
+                    product.with_context(from_magento_operation = True).write({
                         'magento_sku_id': result.get('sku'),
-                        'from_magento_operation': True,
                     })
 
         return products 
@@ -69,6 +62,10 @@ class ProductTemplate(models.Model):
 
 
     def unlink(self):
+
+        if self.env.context.get('from_magento_operation'):
+            return super().unlink()
+
         magento_sku_ids = []
         magento_instance_id = False
 
@@ -96,4 +93,5 @@ class ProductTemplate(models.Model):
         #             raise UserError("Failed to delete product in Magento")
 
         # return super().unlink()
+
         

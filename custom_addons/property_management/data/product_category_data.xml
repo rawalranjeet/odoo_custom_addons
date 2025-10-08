@@ -1,0 +1,13 @@
+<odoo>
+    <record id="product_category_paint" model="product.category">
+        <field name="name">Paint</field>
+        <field name="parent_id" ref="product.product_category_all"/>
+        <field name="category_type">paint</field>
+    </record>
+
+    <record id="product_category_primer" model="product.category">
+        <field name="name">Primer</field>
+        <field name="parent_id" ref="product.product_category_all"/>
+        <field name="category_type">primer</field>
+    </record>
+</odoo>
