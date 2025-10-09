@@ -15,6 +15,7 @@
                     <field name="magento_store_base_url"/>
                     <field name="magento_username"/>
                     <field name="magento_password"/>
+                    <field name="stock_location" required = "1" domain = "[('usage','=','internal')]"/>
                     <field name="magento_access_token" readonly="1"/>
                 </group>
                

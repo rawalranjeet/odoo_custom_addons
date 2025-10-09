@@ -34,6 +34,8 @@ class MagentoInstance(models.Model):
     magento_username = fields.Char(required=True)
     magento_password = fields.Char(required=True)
 
+    stock_location = fields.Many2one("stock.location")
+
 
     def action_test_connection(self):
         url = f'{self.magento_store_base_url}/rest/V1/store/websites'
@@ -116,6 +118,7 @@ class MagentoInstance(models.Model):
 
     def magento_make_request(self, endpoint, params, payload=None, method='GET'):
 
+        # refresh the token
         self.action_generate_access_token()
         
         url = f'{self.magento_store_base_url}/rest/V1{endpoint}'
@@ -176,7 +179,7 @@ class MagentoInstance(models.Model):
                 ],
                 "extension_attributes": {
                     "stock_item": {
-                        "qty": product_template.qty_available,
+                        "qty": vals.get('qty') if vals.get('qty') !='' else product_template.qty_available,
                         "is_in_stock": True if product_template.qty_available > 0 else False,
                     },
                     "category_links": [

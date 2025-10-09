@@ -31,7 +31,7 @@
 
     <menuitem
         id="menu_magento_products"
-        name="Magenti Products"
+        name="Magento Products"
         parent="menu_magento_root"
         sequence="3"
         />

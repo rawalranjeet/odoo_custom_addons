@@ -72,8 +72,6 @@ class ProductController(http.Controller):
         try:
             raw_body = request.httprequest.data
             
-            import pdb; pdb.set_trace()
-            
             data = json.loads(raw_body.decode('utf-8'))
             
             magento_sku_id = data.get("sku")
@@ -90,7 +88,31 @@ class ProductController(http.Controller):
                     'weight' : data.get('weight'),
                     'is_published': True if data.get('status') == 1 else False,
                     'sync_to_magento' : True
-                }) 
+                })
+
+                # product_product = env['product.product'].search([('product_tmpl_id','=',product_template.id)])
+                qty = 0
+                for location in data.get('locations'):
+                    if location['sourceCode'] == 'default':
+                        qty = location['qty']
+
+                stock_quant = env['stock.quant'].search([('product_tmpl_id','=', product_template.id),('location_id','=',8)])
+                vals = {
+                    'location_id': product_template.magento_instance_id.stock_location.id,
+                    'product_tmpl_id' : product_template.id,
+                    'inventory_quantity': qty
+                }
+                
+                
+                if product_template.is_storable:
+
+                    if not stock_quant:
+                        stock_quant = stock_quant.create(vals)
+                    else:
+                        stock_quant.update(vals)
+
+                    stock_quant.with_context(from_magento_operation=True).action_apply_inventory()
+
 
 
             return Response(json.dumps({"status": "ok"}), status=200, content_type="application/json")

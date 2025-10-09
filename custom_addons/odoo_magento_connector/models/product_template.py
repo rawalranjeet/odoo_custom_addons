@@ -95,3 +95,30 @@ class ProductTemplate(models.Model):
         # return super().unlink()
 
         
+
+
+
+class StockQuant(models.Model):
+    _inherit = "stock.quant"
+
+    def action_apply_inventory(self):
+       
+        res = super().action_apply_inventory()
+
+        for stock_quant in self:
+            product_template = stock_quant.product_tmpl_id
+
+            if not self.env.context.get('from_magento_operation') and product_template.sync_to_magento:
+                product_template.magento_instance_id.magento_update_product(product_template, {'qty': stock_quant.quantity})
+
+        return res
+    
+
+# class StockLocation(models.Model):
+#     _inherit = "stock.location"
+
+#     magento_source_code = fields.Char()
+    
+    
+    
+    
