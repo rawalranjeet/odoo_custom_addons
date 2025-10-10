@@ -131,7 +131,7 @@ class ResPartner(models.Model):
         return super().unlink()
     
 
-
+    # Commented this because the odoo calls the write method whenever we create the a partner (so it will be handled in write method, avoid duplicate api calls)
     # @api.model_create_multi
     # def create(self, vals_list):
 

@@ -27,6 +27,12 @@
         <field name="domain">[('magento_order_id','!=',False)]</field>
         <field name="view_mode">list,form</field>
     </record>
+    <record id="magento_order_invoices_view_action" model="ir.actions.act_window">
+        <field name="name">Magento Order Invoices</field>
+        <field name="res_model">account.move</field>
+        <field name="domain">[('line_ids.sale_line_ids.order_id.magento_order_id', '!=', False)]</field>
+        <field name="view_mode">list,form</field>
+    </record>
 
     <menuitem
         id="menu_magento_orders"
@@ -41,6 +47,13 @@
         action="magento_orders_view_action"
         parent="menu_magento_orders"
         sequence="1"
+        />
+    <menuitem
+        id="menu_magento_order_invoices"
+        name="Invoices"
+        action="magento_order_invoices_view_action"
+        parent="menu_magento_orders"
+        sequence="2"
         />
 
 </odoo>

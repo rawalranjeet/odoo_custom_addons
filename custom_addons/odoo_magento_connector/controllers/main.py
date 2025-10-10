@@ -14,7 +14,7 @@ MAGENTO_TO_ODOO_PRODUCT_TYPE = {
 
 
 
-class ProductController(http.Controller):
+class MagentoController(http.Controller):
 
     # Product Operation:::
     @http.route('/magento_product_create', type='http', auth='public', csrf=False, methods=['POST'])
@@ -326,6 +326,7 @@ class ProductController(http.Controller):
     # Order::::::::
     @http.route('/magento_order', type='http', auth='public', csrf=False, methods=['POST'])
     def magento_order(self, **kw):
+        
         try:
             raw_body = request.httprequest.data
             
@@ -380,6 +381,34 @@ class ProductController(http.Controller):
                                 'price_unit': item.get('price'),
                                 'tax_id': [(4, account_tax.id)] if account_tax else False,
                             }) 
+
+            return Response(json.dumps({"status": "ok"}), status=200, content_type="application/json")
+        
+        except UserError as e:
+            return Response(json.dumps({"status": "error", "message": str(e)}), status=409, content_type="application/json")
+
+        except Exception as e:
+            return Response(json.dumps({"status": "error", "message": str(e)}), status=500, content_type="application/json")
+        
+
+
+    @http.route('/magento_invoice_create', type='http', auth='public', csrf=False, methods=['POST'])
+    def magento_invoice_create(self, **kw):
+      
+
+        try:
+            raw_body = request.httprequest.data
+            
+            data = json.loads(raw_body.decode('utf-8'))
+            
+            sale_order = request.env['sale.order'].sudo().search([('magento_order_id','=',data.get('order_id'))])
+
+            if sale_order:
+                if sale_order.state in ['draft','sent']:
+                    sale_order.action_confirm()
+                    
+                sale_order.with_context(from_magento_operation=True)._create_invoices()
+
 
             return Response(json.dumps({"status": "ok"}), status=200, content_type="application/json")
         

@@ -532,7 +532,13 @@ class MagentoInstance(models.Model):
             "magento_cart_id": magento_cart_id
         }
 
+    def magento_create_invoice(self, order):
 
+        payload = {
+            "capture": True
+        }
+
+        return self.magento_make_request(f'/order/{order.magento_order_id}/invoice', '', payload, 'POST')
 
 
     # DELETE Methods :::::::::::

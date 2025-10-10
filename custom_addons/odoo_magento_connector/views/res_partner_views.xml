@@ -16,13 +16,13 @@
             <notebook>
                 <page name="magento" string="Magento">
                     <group >
-                        <field name="sync_to_magento"/>
-                        <field name="magento_instance_id" invisible = "not sync_to_magento" required = "sync_to_magento"/>
+                        <field name="sync_to_magento" readonly="magento_customer_id or magento_address_id"/>
+                        <field name="magento_instance_id" invisible = "not sync_to_magento" required = "sync_to_magento" readonly="magento_customer_id or magento_address_id"/>
 
                         <field name="gender" string="Gender" invisible = "magento_address_id or not sync_to_magento"/>
                         <field name="dob" string="Date of Birth" invisible = " magento_address_id or not sync_to_magento"/>
-                        <field name="magento_customer_id" invisible = "magento_address_id or not sync_to_magento"/>
-                        <field name="magento_address_id" invisible = "magento_customer_id or not sync_to_magento"/>
+                        <field name="magento_customer_id" invisible = "magento_address_id or not sync_to_magento" readonly="1"/>
+                        <field name="magento_address_id" invisible = "magento_customer_id or not sync_to_magento" readonly="1"/>
                     </group>
                     
                 </page>

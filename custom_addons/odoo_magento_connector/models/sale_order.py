@@ -74,6 +74,19 @@ class SaleOrder(models.Model):
         if self.magento_order_id and self.magento_instance_id:
             raise UserError(_("You cannot reset to draft an order which is already synced with Magento."))
         return super().action_draft()
+    
+
+    def _create_invoices(self, grouped=False, final=False, date=None):
+        res = super()._create_invoices(grouped, final, date)
+
+        if not self.env.context.get('from_magento_operation'):
+            for order in self:
+                if order.sync_to_magento:
+                    result = order.magento_instance_id.magento_create_invoice(order)
+                    if not result:
+                        raise UserError("Failed to create Invoice in Magento")
+
+        return res
 
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
@@ -82,4 +95,8 @@ class SaleOrderLine(models.Model):
     magento_instance_id = fields.Many2one("magento.instance")
     magento_discount = fields.Boolean()
     magento_is_added_line = fields.Boolean()
+
+
+
+
 

@@ -9,10 +9,10 @@
             <notebook>
                 <page name="magento" string="Magento">
                     <group >
-                        <field name="sync_to_magento"/>
-                        <field name="magento_instance_id" invisible = "not sync_to_magento" required = "sync_to_magento"/>
+                        <field name="sync_to_magento" readonly="magento_sku_id"/>
+                        <field name="magento_instance_id" invisible = "not sync_to_magento" required = "sync_to_magento" readonly="magento_sku_id"/>
 
-                        <field name="magento_sku_id" invisible = "not sync_to_magento"/>
+                        <field name="magento_sku_id" invisible = "not sync_to_magento" readonly="1"/>
                     </group>
                     
                 </page>
